@@ -1,6 +1,6 @@
 # CBHS Secure Logs
 
-Local-first Next.js application for behavioral health providers to manage CBHS logs, behavior libraries, electronic sign-off, audit events, and PDF exports.
+Local-first Next.js application for behavioral health providers to manage CBHS daily logs, weekly summaries, behavior libraries, electronic sign-off, audit events, and weekly PDF exports.
 
 ## Setup
 
@@ -16,7 +16,8 @@ Local-first Next.js application for behavioral health providers to manage CBHS l
 - Passwords are hashed with bcrypt round 12.
 - Sessions expire after 15 minutes and the client enforces idle logout.
 - Server actions perform RBAC checks before sensitive writes.
-- Signed CBHS entries are created as locked `SIGNED` records and exported only after signature.
+- Signed daily CBHS entries are locked and used as source material for weekly summaries.
+- Weekly summaries can be saved as drafts, signed with password re-authentication, and exported as CBHS-style weekly PDF packets.
 - Audit logs are append-only through application code and do not have update/delete UI.
 - Prisma uses SQLite locally. For PHI, run the database on an encrypted volume or a SQLCipher-enabled SQLite deployment and store `SQLCIPHER_KEY` outside source control.
 

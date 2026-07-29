@@ -36,3 +36,15 @@ export const cbhsEntrySchema = z.object({
   signatureText: z.string().min(2).max(120),
   password: z.string().min(1)
 });
+
+export const weeklySummarySchema = z.object({
+  clientId: z.string().min(1),
+  weekStart: z.coerce.date(),
+  narrative: z.string().min(10).max(8000),
+  unusualEvents: z.string().max(4000).optional().transform((value) => value || undefined),
+  interventionsUsed: z.string().min(5).max(6000),
+  effectiveness: z.string().min(5).max(4000),
+  attestationName: z.string().max(120).optional().transform((value) => value || undefined),
+  signatureText: z.string().max(120).optional().transform((value) => value || undefined),
+  password: z.string().optional()
+});

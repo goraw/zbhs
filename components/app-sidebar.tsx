@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, ClipboardList, FileClock, LayoutDashboard, LogOut, Shield, Users } from "lucide-react";
+import { BookOpen, CalendarDays, ClipboardList, FileClock, LayoutDashboard, LogOut, Shield, Users } from "lucide-react";
 import { signOutAction } from "@/lib/actions/sign-out";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +11,7 @@ export function AppSidebar({ user }: { user: SidebarUser }) {
     ["/clients", "Clients", Users],
     ["/behaviors", "Behaviors", BookOpen],
     ["/logs", "Client Logs", ClipboardList],
+    ["/weekly", "Weekly Summary", CalendarDays],
     ["/audit", "Audit Trail", FileClock],
     ...(user.role === "SUPER_ADMIN" ? [["/admin/users", "User Management", Shield] as const] : [])
   ] as const;

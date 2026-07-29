@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eu
 
 APP_DIR="/opt/zbhs/app"
 DATA_DIR="/opt/zbhs/data"

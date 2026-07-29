@@ -37,6 +37,7 @@ model User {
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
   entries            CBHSEntry[]
+  weeklySummaries    WeeklySummary[]
   auditLogs          AuditLog[]
 }
 
@@ -50,6 +51,7 @@ model Client {
   updatedAt         DateTime    @updatedAt
   behaviors         Behavior[]
   entries           CBHSEntry[]
+  weeklySummaries   WeeklySummary[]
 }
 
 model Behavior {
@@ -101,6 +103,31 @@ model EntryBehavior {
   behavior   Behavior  @relation(fields: [behaviorId], references: [id], onDelete: Restrict)
 
   @@id([entryId, behaviorId])
+}
+
+model WeeklySummary {
+  id                 String      @id @default(cuid())
+  clientId           String
+  staffId            String
+  weekStart          DateTime
+  weekEnd            DateTime
+  narrative          String
+  unusualEvents      String?
+  interventionsUsed  String
+  effectiveness      String
+  attestationName    String?
+  signatureText      String?
+  signatureTimestamp DateTime?
+  status             EntryStatus @default(DRAFT)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  client             Client      @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  staff              User        @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  @@unique([clientId, weekStart])
+  @@index([clientId])
+  @@index([staffId])
+  @@index([status])
 }
 
 model AuditLog {
