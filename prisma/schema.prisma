@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  STAFF
+}
+
+enum BehaviorCategory {
+  AGGRESSIVE
+  SELF_HARM_RISK
+  INTRUSIVE
+  PROPERTY_DESTRUCTION
+  OTHER
+}
+
+enum EntryStatus {
+  DRAFT
+  SIGNED
+}
+
+model User {
+  id                 String      @id @default(cuid())
+  name               String
+  username           String      @unique
+  passwordHash       String
+  role               Role        @default(STAFF)
+  isActive           Boolean     @default(true)
+  forcePasswordReset Boolean     @default(false)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  entries            CBHSEntry[]
+  auditLogs          AuditLog[]
+}
+
+model Client {
+  id                String      @id @default(cuid())
+  name              String
+  dob               DateTime
+  clientId          String      @unique
+  authorizationTier String
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  behaviors         Behavior[]
+  entries           CBHSEntry[]
+}
+
+model Behavior {
+  id                   String           @id @default(cuid())
+  clientRefId          String?
+  client               Client?          @relation(fields: [clientRefId], references: [id], onDelete: Cascade)
+  name                 String
+  category             BehaviorCategory
+  description          String
+  defaultInterventions String
+  severity             Int
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  entries              EntryBehavior[]
+
+  @@index([clientRefId])
+}
+
+model CBHSEntry {
+  id                 String          @id @default(cuid())
+  clientId           String
+  staffId            String
+  date               DateTime
+  startTime          DateTime
+  endTime            DateTime
+  durationMinutes    Int
+  triggers           String
+  staffInterventions String
+  outcome            String
+  summativeNote      String
+  signatureText      String?
+  signatureTimestamp DateTime?
+  status             EntryStatus     @default(DRAFT)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  client             Client          @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  staff              User            @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  behaviors          EntryBehavior[]
+
+  @@index([clientId])
+  @@index([staffId])
+  @@index([status])
+}
+
+model EntryBehavior {
+  entryId    String
+  behaviorId String
+  entry      CBHSEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  behavior   Behavior  @relation(fields: [behaviorId], references: [id], onDelete: Restrict)
+
+  @@id([entryId, behaviorId])
+}
+
+model AuditLog {
+  id               String   @id @default(cuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action           String
+  details          String
+  ipAddress        String?
+  deviceIdentifier String?
+  timestamp        DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+}

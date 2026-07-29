@@ -1,0 +1,38 @@
+import { z } from "zod";
+
+export const userSchema = z.object({
+  name: z.string().min(2).max(100),
+  username: z.string().min(3).max(100).transform((value) => value.trim().toLowerCase()),
+  password: z.string().min(12),
+  role: z.enum(["SUPER_ADMIN", "STAFF"])
+});
+
+export const clientSchema = z.object({
+  name: z.string().min(2).max(100),
+  dob: z.coerce.date(),
+  clientId: z.string().min(2).max(80),
+  authorizationTier: z.string().min(2).max(100)
+});
+
+export const behaviorSchema = z.object({
+  clientRefId: z.string().optional().transform((value) => value || undefined),
+  name: z.string().min(2).max(120),
+  category: z.enum(["AGGRESSIVE", "SELF_HARM_RISK", "INTRUSIVE", "PROPERTY_DESTRUCTION", "OTHER"]),
+  description: z.string().min(5).max(2000),
+  defaultInterventions: z.string().min(5).max(3000),
+  severity: z.coerce.number().int().min(1).max(5)
+});
+
+export const cbhsEntrySchema = z.object({
+  clientId: z.string().min(1),
+  date: z.coerce.date(),
+  startTime: z.string().min(1),
+  endTime: z.string().min(1),
+  behaviorIds: z.array(z.string()).min(1),
+  triggers: z.string().min(5).max(4000),
+  staffInterventions: z.string().min(5).max(4000),
+  outcome: z.string().min(5).max(4000),
+  summativeNote: z.string().min(5).max(6000),
+  signatureText: z.string().min(2).max(120),
+  password: z.string().min(1)
+});
