@@ -19,3 +19,15 @@ Local-first Next.js application for behavioral health providers to manage CBHS l
 - Signed CBHS entries are created as locked `SIGNED` records and exported only after signature.
 - Audit logs are append-only through application code and do not have update/delete UI.
 - Prisma uses SQLite locally. For PHI, run the database on an encrypted volume or a SQLCipher-enabled SQLite deployment and store `SQLCIPHER_KEY` outside source control.
+
+## AWS Lightsail Deployment
+
+The `deploy/lightsail-user-data.sh` script provisions a single-node pilot deployment for `zbhs.zagolseniorscare.com`:
+
+- Ubuntu Lightsail instance
+- Node.js/Next.js app service
+- SQLite database under `/opt/zbhs/data`
+- Caddy reverse proxy with automatic HTTPS
+- temporary Super Admin credentials in `/root/zbhs-admin-credentials.txt`
+
+For production PHI, harden the host before use: encrypted backups, restricted SSH, log retention, AWS BAA, OS patching, least-privilege IAM, and a documented recovery process.
