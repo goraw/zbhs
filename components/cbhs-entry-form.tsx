@@ -24,7 +24,6 @@ export function CBHSEntryForm({ clients, staffName }: { clients: Client[]; staff
       date: new Date(),
       servicePeriods: "",
       behaviorFrequencies: Object.fromEntries(cbhsStandardLines.map((line) => [String(line.line), ""])),
-      summativeNote: "",
       signatureText: staffName,
       password: ""
     }
@@ -83,11 +82,6 @@ export function CBHSEntryForm({ clients, staffName }: { clients: Client[]; staff
             ))}
           </div>
         </div>
-      </div>
-
-      <div>
-        <Label htmlFor="summativeNote">Daily summative note</Label>
-        <Textarea id="summativeNote" {...register("summativeNote")} placeholder="Briefly summarize caregiver observations and support provided for this service date." />
       </div>
 
       <div className="grid gap-4 rounded-md border border-primary/30 bg-muted p-4 md:grid-cols-2">

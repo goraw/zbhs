@@ -39,7 +39,7 @@ export async function createSignedEntry(input: unknown) {
         triggers: "",
         staffInterventions: "",
         outcome: "",
-        summativeNote: data.summativeNote,
+        summativeNote: "",
         signatureText: data.signatureText,
         signatureTimestamp: new Date(),
         status: "SIGNED"

@@ -32,7 +32,7 @@ export const cbhsStandardLines = [
   {
     line: 7,
     behavior: "Other",
-    intervention: "Document behavior and intervention in the daily summative note."
+    intervention: "Document behavior and intervention according to the care plan."
   }
 ] as const;
 

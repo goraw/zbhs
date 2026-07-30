@@ -97,7 +97,6 @@ export function WeeklyCBHSReport({
                       <Text style={[styles.cell, { width: "18%" }]}>{entry.servicePeriods}</Text>
                       <Text style={[styles.cell, { width: "44%" }]}>
                         {cbhsStandardLines.map((line) => `${line.line}: ${frequencies[String(line.line)] || ""}`).join("   ")}
-                        {"\n"}Daily summative note: {entry.summativeNote}
                       </Text>
                       <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>{initials(entry.staff.name)}</Text>
                     </View>

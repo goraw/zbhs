@@ -28,7 +28,6 @@ export const cbhsEntrySchema = z.object({
   date: z.coerce.date(),
   servicePeriods: z.string().min(2).max(1000),
   behaviorFrequencies: z.record(z.string().max(20)).default({}),
-  summativeNote: z.string().min(5).max(6000),
   signatureText: z.string().min(2).max(120),
   password: z.string().min(1)
 });
