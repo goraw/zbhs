@@ -1,11 +1,11 @@
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import type { Behavior, CBHSEntry, Client, EntryBehavior, User, WeeklySummary } from "@prisma/client";
+import type { CBHSEntry, Client, User, WeeklySummary } from "@prisma/client";
+import { cbhsStandardLines, parseBehaviorFrequencies } from "@/lib/cbhs-standard-lines";
 
 type SummaryWithRelations = WeeklySummary & { client: Client; staff: User };
 type EntryWithRelations = CBHSEntry & {
   staff: User;
-  behaviors: Array<EntryBehavior & { behavior: Behavior }>;
 };
 
 const styles = StyleSheet.create({
@@ -31,25 +31,17 @@ function shortDate(date: Date) {
   return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
 }
 
-function timeRange(entry: EntryWithRelations) {
-  return `${entry.startTime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} - ${entry.endTime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
-}
-
 function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).map((part) => part[0]?.toUpperCase()).join("").slice(0, 3);
 }
 
 export function WeeklyCBHSReport({
   summary,
-  entries,
-  behaviors
+  entries
 }: {
   summary: SummaryWithRelations;
   entries: EntryWithRelations[];
-  behaviors: Behavior[];
 }) {
-  const behaviorIndex = new Map(behaviors.map((behavior, index) => [behavior.id, index + 1]));
-
   return (
     <Document title={`CBHS Weekly Report ${summary.client.clientId}`}>
       <Page size="LETTER" style={styles.page}>
@@ -75,9 +67,9 @@ export function WeeklyCBHSReport({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>2. Behaviors and Standard Interventions</Text>
           <View style={styles.box}>
-            {behaviors.slice(0, 8).map((behavior, index) => (
-              <Text key={behavior.id} style={styles.behavior}>
-                {index + 1}. {behavior.name} - {behavior.description} Standard interventions: {behavior.defaultInterventions}
+            {cbhsStandardLines.map((line) => (
+              <Text key={line.line} style={styles.behavior}>
+                {line.line}. {line.behavior} with {line.intervention}
               </Text>
             ))}
           </View>
@@ -96,19 +88,21 @@ export function WeeklyCBHSReport({
                   <Text style={[styles.cell, { width: "44%" }]}>Frequency with behaviors and interventions</Text>
                   <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>Staff</Text>
                 </View>
-                {dayEntries.length ? dayEntries.map((entry) => (
-                  <View key={entry.id} style={styles.row}>
-                    <Text style={[styles.cell, { width: "14%" }]}>{dayName}</Text>
-                    <Text style={[styles.cell, { width: "14%" }]}>{shortDate(entry.date)}</Text>
-                    <Text style={[styles.cell, { width: "18%" }]}>{timeRange(entry)}</Text>
-                    <Text style={[styles.cell, { width: "44%" }]}>
-                      {entry.behaviors.map(({ behavior }) => `${behaviorIndex.get(behavior.id) ?? "-"}: ${behavior.name}`).join("; ")}
-                      {"\n"}Interventions: {entry.staffInterventions}
-                      {"\n"}Outcome: {entry.outcome}
-                    </Text>
-                    <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>{initials(entry.staff.name)}</Text>
-                  </View>
-                )) : (
+                {dayEntries.length ? dayEntries.map((entry) => {
+                  const frequencies = parseBehaviorFrequencies(entry.behaviorFrequencies);
+                  return (
+                    <View key={entry.id} style={styles.row}>
+                      <Text style={[styles.cell, { width: "14%" }]}>{dayName}</Text>
+                      <Text style={[styles.cell, { width: "14%" }]}>{shortDate(entry.date)}</Text>
+                      <Text style={[styles.cell, { width: "18%" }]}>{entry.servicePeriods}</Text>
+                      <Text style={[styles.cell, { width: "44%" }]}>
+                        {cbhsStandardLines.map((line) => `${line.line}: ${frequencies[String(line.line)] || ""}`).join("   ")}
+                        {"\n"}Daily summative note: {entry.summativeNote}
+                      </Text>
+                      <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>{initials(entry.staff.name)}</Text>
+                    </View>
+                  );
+                }) : (
                   <View style={styles.row}>
                     <Text style={[styles.cell, { width: "14%" }]}>{dayName}</Text>
                     <Text style={[styles.cell, { width: "14%" }]}>Leave blank if none</Text>

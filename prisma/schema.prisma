@@ -78,9 +78,11 @@ model CBHSEntry {
   startTime          DateTime
   endTime            DateTime
   durationMinutes    Int
-  triggers           String
-  staffInterventions String
-  outcome            String
+  servicePeriods     String          @default("")
+  behaviorFrequencies String         @default("{}")
+  triggers           String          @default("")
+  staffInterventions String          @default("")
+  outcome            String          @default("")
   summativeNote      String
   signatureText      String?
   signatureTimestamp DateTime?

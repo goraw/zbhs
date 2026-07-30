@@ -19,21 +19,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return new NextResponse("Signed weekly summary not found", { status: 404 });
   }
 
-  const [behaviors, entries] = await Promise.all([
-    prisma.behavior.findMany({
-      where: { OR: [{ clientRefId: summary.clientId }, { clientRefId: null }] },
-      orderBy: [{ severity: "desc" }, { name: "asc" }]
-    }),
-    prisma.cBHSEntry.findMany({
+  const entries = await prisma.cBHSEntry.findMany({
       where: {
         clientId: summary.clientId,
         date: { gte: summary.weekStart, lte: summary.weekEnd },
         status: "SIGNED"
       },
-      include: { staff: true, behaviors: { include: { behavior: true } } },
-      orderBy: { startTime: "asc" }
-    })
-  ]);
+      include: { staff: true },
+      orderBy: { date: "asc" }
+    });
 
   await audit("EXPORT_WEEKLY_PDF", {
     userId: user.id,
@@ -41,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     details: `Exported weekly CBHS PDF for summary ${summary.id}.`
   });
 
-  const blob = await pdf(<WeeklyCBHSReport summary={summary} entries={entries} behaviors={behaviors} />).toBlob();
+  const blob = await pdf(<WeeklyCBHSReport summary={summary} entries={entries} />).toBlob();
   const arrayBuffer = await blob.arrayBuffer();
 
   return new NextResponse(arrayBuffer, {

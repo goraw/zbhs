@@ -26,12 +26,8 @@ export const behaviorSchema = z.object({
 export const cbhsEntrySchema = z.object({
   clientId: z.string().min(1),
   date: z.coerce.date(),
-  startTime: z.string().min(1),
-  endTime: z.string().min(1),
-  behaviorIds: z.array(z.string()).min(1),
-  triggers: z.string().min(5).max(4000),
-  staffInterventions: z.string().min(5).max(4000),
-  outcome: z.string().min(5).max(4000),
+  servicePeriods: z.string().min(2).max(1000),
+  behaviorFrequencies: z.record(z.string().max(20)).default({}),
   summativeNote: z.string().min(5).max(6000),
   signatureText: z.string().min(2).max(120),
   password: z.string().min(1)

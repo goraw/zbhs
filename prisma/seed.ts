@@ -1,5 +1,6 @@
 import { PrismaClient, Role, BehaviorCategory } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { cbhsStandardLines } from "../lib/cbhs-standard-lines";
 
 const prisma = new PrismaClient();
 
@@ -30,17 +31,18 @@ async function main() {
     }
   });
 
-  const behaviors = [
-    ["Verbal aggression", BehaviorCategory.AGGRESSIVE, "Raised voice, threats, or hostile verbalizations.", "Use calm voice, offer choices, redirect to coping skill.", 3],
-    ["Self-harm statements", BehaviorCategory.SELF_HARM_RISK, "Statements indicating intent or ideation for self-harm.", "Initiate safety protocol, maintain line-of-sight, notify supervisor.", 5],
-    ["Boundary intrusion", BehaviorCategory.INTRUSIVE, "Repeated interruptions or entering peer space.", "Prompt boundaries, reinforce replacement behavior, provide structured activity.", 2]
-  ] as const;
-
-  for (const [name, category, description, defaultInterventions, severity] of behaviors) {
-    const exists = await prisma.behavior.findFirst({ where: { clientRefId: client.id, name } });
+  for (const line of cbhsStandardLines) {
+    const exists = await prisma.behavior.findFirst({ where: { clientRefId: client.id, name: line.behavior } });
     if (!exists) {
       await prisma.behavior.create({
-        data: { clientRefId: client.id, name, category, description, defaultInterventions, severity }
+        data: {
+          clientRefId: client.id,
+          name: line.behavior,
+          category: BehaviorCategory.OTHER,
+          description: line.behavior,
+          defaultInterventions: line.intervention,
+          severity: line.line
+        }
       });
     }
   }

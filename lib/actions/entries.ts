@@ -21,10 +21,9 @@ export async function createSignedEntry(input: unknown) {
   const passwordOk = await verifyUserPassword(user.id, data.password);
   if (!passwordOk) throw new Error("Signature verification failed.");
 
-  const startTime = combineDateAndTime(data.date, data.startTime);
-  const endTime = combineDateAndTime(data.date, data.endTime);
-  const durationMinutes = Math.max(0, Math.round((endTime.getTime() - startTime.getTime()) / 60000));
-  if (durationMinutes <= 0) throw new Error("End time must be after start time.");
+  const startTime = combineDateAndTime(data.date, "00:00");
+  const endTime = combineDateAndTime(data.date, "00:01");
+  const durationMinutes = 0;
 
   const entry = await prisma.$transaction(async (tx) => {
     const created = await tx.cBHSEntry.create({
@@ -35,16 +34,15 @@ export async function createSignedEntry(input: unknown) {
         startTime,
         endTime,
         durationMinutes,
-        triggers: data.triggers,
-        staffInterventions: data.staffInterventions,
-        outcome: data.outcome,
+        servicePeriods: data.servicePeriods,
+        behaviorFrequencies: JSON.stringify(data.behaviorFrequencies),
+        triggers: "",
+        staffInterventions: "",
+        outcome: "",
         summativeNote: data.summativeNote,
         signatureText: data.signatureText,
         signatureTimestamp: new Date(),
-        status: "SIGNED",
-        behaviors: {
-          create: data.behaviorIds.map((behaviorId) => ({ behaviorId }))
-        }
+        status: "SIGNED"
       }
     });
 
@@ -59,5 +57,5 @@ export async function createSignedEntry(input: unknown) {
     return created;
   });
 
-  redirect(`/api/reports/${entry.id}`);
+  redirect("/logs");
 }

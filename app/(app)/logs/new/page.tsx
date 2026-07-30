@@ -6,15 +6,12 @@ export const dynamic = "force-dynamic";
 
 export default async function NewLogPage() {
   const user = await getCurrentUser();
-  const [clients, behaviors] = await Promise.all([
-    prisma.client.findMany({ orderBy: { name: "asc" } }),
-    prisma.behavior.findMany({ orderBy: { name: "asc" } })
-  ]);
+  const clients = await prisma.client.findMany({ orderBy: { name: "asc" } });
 
   return (
     <section>
       <h1 className="text-2xl font-semibold">New CBHS Entry</h1>
-      <CBHSEntryForm clients={clients} behaviors={behaviors} staffName={user?.name ?? ""} />
+      <CBHSEntryForm clients={clients} staffName={user?.name ?? ""} />
     </section>
   );
 }
