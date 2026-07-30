@@ -1,43 +1,38 @@
 export const cbhsStandardLines = [
   {
     line: 1,
-    behavior: "Verbal outburst/agitation",
-    intervention: "verbal redirection and calm presence"
+    behavior: "Inappropriate Nakedness",
+    intervention: "Verbal cueing, check temperature/clothing comfort, escort to private area."
   },
   {
     line: 2,
-    behavior: "Task refusal/resistance",
-    intervention: "active listening and positive reinforcement"
+    behavior: "Sexual Acting Out / Object Insertion",
+    intervention: "Supervision during toileting, set firm/neutral limits, redirect to private location."
   },
   {
     line: 3,
-    behavior: "Boundary intrusion/personal space conflict",
-    intervention: "physical redirection and low-stimulation spacing"
+    behavior: "Fecal Smearing / Inappropriate Toileting",
+    intervention: "1:1 hygiene assistance post-voiding, area clearance, active diversion tasks."
   },
   {
     line: 4,
-    behavior: "Restlessness/wandering",
-    intervention: "guided coping exercise or walking activity"
+    behavior: "Wandering / Exit Seeking",
+    intervention: "Redirection to safe areas, offer accompanied walks, continuous visual monitoring."
   },
   {
     line: 5,
-    behavior: "Response to psychosis/hallucinations",
-    intervention: "reality testing and reassuring cues"
+    behavior: "Repetitive Pacing / Agitation",
+    intervention: "Reassurance, low-stimulation environment, engage in repetitive/structured activity."
   },
   {
     line: 6,
-    behavior: "Nighttime/transition distress",
-    intervention: "environmental modification (reducing noise/lighting)"
+    behavior: "Boundary Intrusion / Substance Triggers",
+    intervention: "Clear boundary setting, gentle 1:1 redirection, weekly behavior plan adherence."
   },
   {
     line: 7,
-    behavior: "Intimidating posture/verbal abuse",
-    intervention: "de-escalation protocol and offer of quiet space"
-  },
-  {
-    line: 8,
-    behavior: "Property disruption/throwing objects",
-    intervention: "safe area clearance and 1:1 active diversion"
+    behavior: "Other",
+    intervention: "Document behavior and intervention in the daily summative note."
   }
 ] as const;
 
