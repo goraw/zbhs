@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Lock, Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { deleteLoggedEntry } from "@/lib/actions/entries";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +24,7 @@ export default async function LogsPage() {
       <div className="overflow-hidden rounded-md border bg-white shadow-sm">
         <table className="w-full text-left text-sm">
           <thead className="bg-muted">
-            <tr><th className="p-3">Date</th><th className="p-3">Client</th><th className="p-3">Staff</th><th className="p-3">Status</th><th className="p-3">Use</th></tr>
+            <tr><th className="p-3">Date</th><th className="p-3">Client</th><th className="p-3">Staff</th><th className="p-3">Status</th><th className="p-3">Actions</th></tr>
           </thead>
           <tbody>
             {entries.map((entry) => (
@@ -31,8 +32,18 @@ export default async function LogsPage() {
                 <td className="p-3">{entry.date.toLocaleDateString()}</td>
                 <td className="p-3 font-medium">{entry.client.name}</td>
                 <td className="p-3">{entry.staff.name}</td>
-                <td className="p-3">{entry.status === "SIGNED" ? <span className="inline-flex items-center gap-1 text-primary"><Lock className="h-4 w-4" />Signed</span> : "Draft"}</td>
-                <td className="p-3">{entry.status === "SIGNED" ? "Weekly report source" : "Draft source"}</td>
+                <td className="p-3">Logged</td>
+                <td className="p-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild size="sm" variant="secondary">
+                      <Link href={`/logs/${entry.id}/edit`}><Pencil className="h-4 w-4" />Edit</Link>
+                    </Button>
+                    <form action={deleteLoggedEntry}>
+                      <input type="hidden" name="entryId" value={entry.id} />
+                      <Button type="submit" size="sm" variant="destructive"><Trash2 className="h-4 w-4" />Delete</Button>
+                    </form>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

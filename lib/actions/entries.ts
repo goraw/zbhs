@@ -1,10 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
-import { audit } from "@/lib/audit";
-import { verifyUserPassword } from "@/lib/security";
 import { cbhsEntrySchema } from "@/lib/validation";
 
 function combineDateAndTime(date: Date, time: string) {
@@ -14,12 +13,9 @@ function combineDateAndTime(date: Date, time: string) {
   return value;
 }
 
-export async function createSignedEntry(input: unknown) {
+export async function createLoggedEntry(input: unknown) {
   const user = await requireUser();
   const data = cbhsEntrySchema.parse(input);
-
-  const passwordOk = await verifyUserPassword(user.id, data.password);
-  if (!passwordOk) throw new Error("Signature verification failed.");
 
   const startTime = combineDateAndTime(data.date, "00:00");
   const endTime = combineDateAndTime(data.date, "00:01");
@@ -40,7 +36,7 @@ export async function createSignedEntry(input: unknown) {
         staffInterventions: "",
         outcome: "",
         summativeNote: "",
-        signatureText: data.signatureText,
+        signatureText: user.name,
         signatureTimestamp: new Date(),
         status: "SIGNED"
       }
@@ -50,7 +46,7 @@ export async function createSignedEntry(input: unknown) {
       data: {
         userId: user.id,
         action: "CREATE_CBHS_ENTRY",
-        details: `Created and signed locked CBHS entry ${created.id}.`
+        details: `Created CBHS log entry ${created.id}.`
       }
     });
 
@@ -58,4 +54,60 @@ export async function createSignedEntry(input: unknown) {
   });
 
   redirect("/logs");
+}
+
+export async function updateLoggedEntry(entryId: string, input: unknown) {
+  const user = await requireUser();
+  const data = cbhsEntrySchema.parse(input);
+
+  const startTime = combineDateAndTime(data.date, "00:00");
+  const endTime = combineDateAndTime(data.date, "00:01");
+
+  await prisma.$transaction(async (tx) => {
+    await tx.cBHSEntry.update({
+      where: { id: entryId },
+      data: {
+        clientId: data.clientId,
+        date: data.date,
+        startTime,
+        endTime,
+        servicePeriods: data.servicePeriods,
+        behaviorFrequencies: JSON.stringify(data.behaviorFrequencies),
+        signatureText: user.name,
+        signatureTimestamp: new Date(),
+        status: "SIGNED"
+      }
+    });
+
+    await tx.auditLog.create({
+      data: {
+        userId: user.id,
+        action: "UPDATE_CBHS_ENTRY",
+        details: `Updated CBHS log entry ${entryId}.`
+      }
+    });
+  });
+
+  revalidatePath("/logs");
+  redirect("/logs");
+}
+
+export async function deleteLoggedEntry(formData: FormData) {
+  const user = await requireUser();
+  const entryId = String(formData.get("entryId") ?? "");
+  if (!entryId) throw new Error("Entry ID is required.");
+
+  await prisma.$transaction(async (tx) => {
+    await tx.cBHSEntry.delete({ where: { id: entryId } });
+
+    await tx.auditLog.create({
+      data: {
+        userId: user.id,
+        action: "DELETE_CBHS_ENTRY",
+        details: `Deleted CBHS log entry ${entryId}.`
+      }
+    });
+  });
+
+  revalidatePath("/logs");
 }

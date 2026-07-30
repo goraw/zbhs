@@ -27,9 +27,7 @@ export const cbhsEntrySchema = z.object({
   clientId: z.string().min(1),
   date: z.coerce.date(),
   servicePeriods: z.string().min(2).max(1000),
-  behaviorFrequencies: z.record(z.string().max(20)).default({}),
-  signatureText: z.string().min(2).max(120),
-  password: z.string().min(1)
+  behaviorFrequencies: z.record(z.string().max(20)).default({})
 });
 
 export const weeklySummarySchema = z.object({

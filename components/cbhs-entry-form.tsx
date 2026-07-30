@@ -1,12 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Client } from "@prisma/client";
-import { Lock } from "lucide-react";
+import type { CBHSEntry, Client } from "@prisma/client";
+import { Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { createSignedEntry } from "@/lib/actions/entries";
-import { cbhsStandardLines } from "@/lib/cbhs-standard-lines";
+import { createLoggedEntry, updateLoggedEntry } from "@/lib/actions/entries";
+import { cbhsStandardLines, parseBehaviorFrequencies } from "@/lib/cbhs-standard-lines";
 import { cbhsEntrySchema } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,24 +15,51 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 type FormValues = z.infer<typeof cbhsEntrySchema>;
+type EntryForForm = Pick<CBHSEntry, "id" | "clientId" | "date" | "servicePeriods" | "behaviorFrequencies">;
 
-export function CBHSEntryForm({ clients, staffName }: { clients: Client[]; staffName: string }) {
+function dateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function emptyFrequencies() {
+  return Object.fromEntries(cbhsStandardLines.map((line) => [String(line.line), ""]));
+}
+
+export function CBHSEntryForm({
+  clients,
+  staffName,
+  entry
+}: {
+  clients: Client[];
+  staffName: string;
+  entry?: EntryForForm;
+}) {
+  const behaviorFrequencies = {
+    ...emptyFrequencies(),
+    ...parseBehaviorFrequencies(entry?.behaviorFrequencies)
+  };
+
   const form = useForm<FormValues>({
     resolver: zodResolver(cbhsEntrySchema),
     defaultValues: {
-      clientId: clients[0]?.id ?? "",
-      date: new Date(),
-      servicePeriods: "",
-      behaviorFrequencies: Object.fromEntries(cbhsStandardLines.map((line) => [String(line.line), ""])),
-      signatureText: staffName,
-      password: ""
+      clientId: entry?.clientId ?? clients[0]?.id ?? "",
+      date: entry?.date ?? new Date(),
+      servicePeriods: entry?.servicePeriods ?? "",
+      behaviorFrequencies
     }
   });
 
   const { register, handleSubmit, formState } = form;
 
   async function onSubmit(values: FormValues) {
-    await createSignedEntry(values);
+    if (entry) {
+      await updateLoggedEntry(entry.id, values);
+      return;
+    }
+    await createLoggedEntry(values);
   }
 
   return (
@@ -44,7 +71,7 @@ export function CBHSEntryForm({ clients, staffName }: { clients: Client[]; staff
         </div>
         <div>
           <Label htmlFor="date">Date</Label>
-          <Input id="date" type="date" {...register("date", { valueAsDate: true })} />
+          <Input id="date" type="date" defaultValue={dateInputValue(entry?.date ?? new Date())} {...register("date", { valueAsDate: true })} />
         </div>
         <div><Label>Staff</Label><Input value={staffName} readOnly /></div>
       </div>
@@ -84,22 +111,16 @@ export function CBHSEntryForm({ clients, staffName }: { clients: Client[]; staff
         </div>
       </div>
 
-      <div className="grid gap-4 rounded-md border border-primary/30 bg-muted p-4 md:grid-cols-2">
-        <div>
-          <Label htmlFor="signatureText">Typed signature</Label>
-          <Input id="signatureText" {...register("signatureText")} />
-        </div>
-        <div>
-          <Label htmlFor="password">Re-enter password</Label>
-          <Input id="password" type="password" autoComplete="current-password" {...register("password")} />
-        </div>
-        <p className="text-sm text-muted-foreground md:col-span-2">Signing records the current date and time, locks the entry, and writes a compliance audit event.</p>
+      <div className="rounded-md border border-primary/30 bg-muted p-4">
+        <Label>Signature</Label>
+        <Input value={staffName} readOnly />
+        <p className="mt-2 text-sm text-muted-foreground">The logged-in user's name is recorded with the current date and time when this entry is logged.</p>
       </div>
 
-      {Object.keys(formState.errors).length ? <p className="text-sm text-destructive">Please complete all required fields before signing.</p> : null}
+      {Object.keys(formState.errors).length ? <p className="text-sm text-destructive">Please complete all required fields before logging.</p> : null}
       <Button type="submit" className="w-fit">
-        <Lock className="h-4 w-4" />
-        Sign and lock entry
+        <Check className="h-4 w-4" />
+        Log
       </Button>
     </form>
   );
