@@ -124,9 +124,6 @@ export function WeeklyCBHSReport({
           <Text style={styles.subtitle}>{summary.client.name} | {shortDate(summary.weekStart)} - {shortDate(summary.weekEnd)}</Text>
         </View>
         <View style={styles.section}><Text style={styles.sectionTitle}>Weekly Summary</Text><Text style={styles.box}>{summary.narrative}</Text></View>
-        <View style={styles.section}><Text style={styles.sectionTitle}>Unusual Events</Text><Text style={styles.box}>{summary.unusualEvents || "None noted."}</Text></View>
-        <View style={styles.section}><Text style={styles.sectionTitle}>Interventions Used</Text><Text style={styles.box}>{summary.interventionsUsed}</Text></View>
-        <View style={styles.section}><Text style={styles.sectionTitle}>Effectiveness / Outcome</Text><Text style={styles.box}>{summary.effectiveness}</Text></View>
         <View style={styles.signature}>
           <Text>A representative of the organization attests to the accuracy of this weekly CBHS information.</Text>
           <Text>Printed name: {summary.attestationName || summary.staff.name}</Text>

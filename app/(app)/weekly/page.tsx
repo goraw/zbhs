@@ -39,20 +39,8 @@ export default async function WeeklyPage() {
           <Input id="weekStart" name="weekStart" type="date" required />
         </div>
         <div className="lg:col-span-2">
-          <Label htmlFor="narrative">Weekly narrative overview</Label>
-          <Textarea id="narrative" name="narrative" required placeholder="Behaviors observed, support context, trends, and daily patterns." />
-        </div>
-        <div>
-          <Label htmlFor="interventionsUsed">Interventions used</Label>
-          <Textarea id="interventionsUsed" name="interventionsUsed" required placeholder="Approved interventions used across the week." />
-        </div>
-        <div>
-          <Label htmlFor="effectiveness">Effectiveness / outcome</Label>
-          <Textarea id="effectiveness" name="effectiveness" required placeholder="Whether interventions were successful and any baseline changes." />
-        </div>
-        <div className="lg:col-span-2">
-          <Label htmlFor="unusualEvents">Unusual events</Label>
-          <Textarea id="unusualEvents" name="unusualEvents" placeholder="Leave blank when none." />
+          <Label htmlFor="narrative">Weekly summary</Label>
+          <Textarea id="narrative" name="narrative" required placeholder="Summarize the week for this client." />
         </div>
         <div>
           <Label htmlFor="attestationName">Printed attestation name</Label>
