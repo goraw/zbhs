@@ -21,6 +21,7 @@ const styles = StyleSheet.create({
   box: { border: "1px solid #d8e3e5", padding: 6, marginTop: 4 },
   behavior: { marginBottom: 4 },
   dayHeader: { backgroundColor: "#edf4f4", fontWeight: 700 },
+  dateLine: { marginTop: 3, color: "#506368" },
   frequencyRow: { flexDirection: "row", marginBottom: 4 },
   frequencyItem: { flexDirection: "row", alignItems: "center", width: "25%" },
   frequencyNumber: { width: 12, fontSize: 10 },
@@ -103,34 +104,31 @@ export function WeeklyCBHSReport({
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>3. Weekly Daily Log</Text>
+          <View style={[styles.row, styles.dayHeader]}>
+            <Text style={[styles.cell, { width: "24%" }]}>Day / Service Date</Text>
+            <Text style={[styles.cell, { width: "18%" }]}>Time</Text>
+            <Text style={[styles.cell, { width: "48%" }]}>Frequency with behaviors and interventions</Text>
+            <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>Staff</Text>
+          </View>
           {dayNames.map((dayName, dayIndex) => {
             const dayEntries = entries.filter((entry) => entry.date.getDay() === dayIndex);
             return (
               <View key={dayName} wrap={false}>
-                <View style={[styles.row, styles.dayHeader]}>
-                  <Text style={[styles.cell, { width: "14%" }]}>{dayName}</Text>
-                  <Text style={[styles.cell, { width: "14%" }]}>Service Date</Text>
-                  <Text style={[styles.cell, { width: "18%" }]}>Time</Text>
-                  <Text style={[styles.cell, { width: "44%" }]}>Frequency with behaviors and interventions</Text>
-                  <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>Staff</Text>
-                </View>
                 {dayEntries.length ? dayEntries.map((entry) => {
                   const frequencies = parseBehaviorFrequencies(entry.behaviorFrequencies);
                   return (
                     <View key={entry.id} style={styles.row}>
-                      <Text style={[styles.cell, { width: "14%" }]}>{dayName}</Text>
-                      <Text style={[styles.cell, { width: "14%" }]}>{shortDate(entry.date)}</Text>
+                      <Text style={[styles.cell, { width: "24%" }]}>{dayName}<Text style={styles.dateLine}>{"\n"}{shortDate(entry.date)}</Text></Text>
                       <Text style={[styles.cell, { width: "18%" }]}>{entry.servicePeriods}</Text>
-                      <View style={[styles.cell, { width: "44%" }]}><FrequencyBoxes frequencies={frequencies} /></View>
+                      <View style={[styles.cell, { width: "48%" }]}><FrequencyBoxes frequencies={frequencies} /></View>
                       <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>{initials(entry.staff.name)}</Text>
                     </View>
                   );
                 }) : (
                   <View style={styles.row}>
-                    <Text style={[styles.cell, { width: "14%" }]}>{dayName}</Text>
-                    <Text style={[styles.cell, { width: "14%" }]} />
+                    <Text style={[styles.cell, { width: "24%" }]}>{dayName}</Text>
                     <Text style={[styles.cell, { width: "18%" }]} />
-                    <Text style={[styles.cell, { width: "44%" }]} />
+                    <Text style={[styles.cell, { width: "48%" }]} />
                     <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]} />
                   </View>
                 )}
