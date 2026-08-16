@@ -30,6 +30,15 @@ function emptyFrequencies() {
   return Object.fromEntries(cbhsStandardLines.map((line) => [String(line.line), ""]));
 }
 
+function staffInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase())
+    .join("")
+    .slice(0, 3);
+}
+
 export function CBHSEntryForm({
   clients,
   staffName,
@@ -63,6 +72,7 @@ export function CBHSEntryForm({
   const activeEntryId = detectedEntry?.id ?? entry?.id;
   const isUpdating = Boolean(activeEntryId);
   const isBusy = formState.isSubmitting || isCheckingExisting;
+  const displayedInitials = staffInitials(staffName);
 
   useEffect(() => {
     if (entry || !selectedClientId || !selectedDate) return;
@@ -247,9 +257,9 @@ export function CBHSEntryForm({
       </div>
 
       <div className="rounded-md border border-primary/30 bg-muted p-4">
-        <Label>Signature</Label>
-        <Input value={staffName} readOnly />
-        <p className="mt-2 text-sm text-muted-foreground">The logged-in user's name is recorded with the current date and time when this entry is logged.</p>
+        <Label>Staff Initials</Label>
+        <Input value={displayedInitials} readOnly />
+        <p className="mt-2 text-sm text-muted-foreground">The logged-in user's initials are recorded with the current date and time when this entry is logged.</p>
       </div>
 
       {Object.keys(formState.errors).length ? <p className="text-sm text-destructive">Please complete all required fields before logging.</p> : null}
