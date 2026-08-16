@@ -140,7 +140,7 @@ export function CBHSEntryForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="mt-6 grid gap-5 rounded-md border bg-white p-5 shadow-sm">
+    <form onSubmit={handleSubmit(onSubmit)} className="mt-6 grid gap-5 rounded-md border bg-white/95 p-5 shadow-lg shadow-primary/5">
       <div className="grid gap-4 md:grid-cols-3">
         <div>
           <Label htmlFor="clientId">Client</Label>
@@ -219,7 +219,7 @@ export function CBHSEntryForm({
       {Object.keys(formState.errors).length ? <p className="text-sm text-destructive">Please complete all required fields before logging.</p> : null}
       <Button type="submit" className="w-fit" disabled={isBusy}>
         {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-        {formState.isSubmitting ? (isUpdating ? "Updating..." : "Logging...") : isUpdating ? "Update" : "Log"}
+        {formState.isSubmitting ? (isUpdating ? "Updating..." : "Logging...") : isUpdating ? "✅ Update" : "📝 Log"}
       </Button>
     </form>
   );

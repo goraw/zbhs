@@ -15,7 +15,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AppSidebar user={user} />
       <main className="flex-1 p-4 md:p-8">
         <IdleLogout />
-        {children}
+        <div className="app-page-shell mx-auto max-w-7xl">
+          {children}
+        </div>
       </main>
     </div>
   );
