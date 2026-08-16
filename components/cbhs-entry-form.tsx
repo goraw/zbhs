@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { CBHSEntry, Client } from "@prisma/client";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -40,6 +40,7 @@ export function CBHSEntryForm({
   entry?: EntryForForm;
 }) {
   const [detectedEntry, setDetectedEntry] = useState<ExistingEntry>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState("");
   const [isCheckingExisting, startCheckingExisting] = useTransition();
   const behaviorFrequencies = {
     ...emptyFrequencies(),
@@ -72,13 +73,17 @@ export function CBHSEntryForm({
       setDetectedEntry(existing);
 
       if (existing) {
+        setDuplicateWarning("A log is already entered for this date. The saved data has been populated, and submitting will update that log.");
         setValue("servicePeriods", existing.servicePeriods, { shouldDirty: false });
         setValue(
           "behaviorFrequencies",
           { ...emptyFrequencies(), ...parseBehaviorFrequencies(existing.behaviorFrequencies) },
           { shouldDirty: false }
         );
+        return;
       }
+
+      setDuplicateWarning("");
     });
   }, [entry, selectedClientId, selectedDate, setValue]);
 
@@ -110,11 +115,12 @@ export function CBHSEntryForm({
         setDetectedEntry(existing);
 
         if (existing) {
-          window.alert("A log is already entered for this date. The saved data will be populated, and submitting will update that log.");
+          setDuplicateWarning("A log is already entered for this date. The saved data has been populated, and submitting will update that log.");
           populateEntry(existing);
           return;
         }
 
+        setDuplicateWarning("");
         resetDailyFields();
       });
       return;
@@ -123,6 +129,7 @@ export function CBHSEntryForm({
     if (nextDateValue === originalDateValue) {
       onChange(nextDate);
       setDetectedEntry(null);
+      setDuplicateWarning("");
       setValue("servicePeriods", entry.servicePeriods, { shouldDirty: false });
       setValue("behaviorFrequencies", behaviorFrequencies, { shouldDirty: false });
       return;
@@ -139,12 +146,15 @@ export function CBHSEntryForm({
 
       if (existing) {
         if (!isSameEntry) {
-          window.alert("A log is already entered for the selected date. The saved data has been populated, and submitting will update that log.");
+          setDuplicateWarning("A log is already entered for the selected date. The saved data has been populated, and submitting will update that log.");
+        } else {
+          setDuplicateWarning("");
         }
         populateEntry(existing);
         return;
       }
 
+      setDuplicateWarning("");
       resetDailyFields();
     });
   }
@@ -182,6 +192,20 @@ export function CBHSEntryForm({
         </div>
         <div><Label>Staff</Label><Input value={staffName} readOnly /></div>
       </div>
+
+      {duplicateWarning ? (
+        <div className="flex items-start justify-between gap-3 rounded-md border border-secondary/60 bg-secondary/15 p-3 text-sm text-foreground shadow-sm">
+          <p>{duplicateWarning}</p>
+          <button
+            type="button"
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-white/70 hover:text-foreground"
+            aria-label="Dismiss duplicate log warning"
+            onClick={() => setDuplicateWarning("")}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : null}
 
       <div className="rounded-md border bg-muted/60 p-4">
         <h2 className="text-sm font-semibold">Behaviors and Standard Interventions</h2>
@@ -221,12 +245,6 @@ export function CBHSEntryForm({
           </div>
         </div>
       </div>
-
-      {detectedEntry ? (
-        <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-primary">
-          A log is already added for this client and date. The saved data has been populated, and submitting will update that log.
-        </div>
-      ) : null}
 
       <div className="rounded-md border border-primary/30 bg-muted p-4">
         <Label>Signature</Label>
