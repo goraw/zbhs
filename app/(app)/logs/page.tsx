@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { deleteLoggedEntry } from "@/lib/actions/entries";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ export default async function LogsPage() {
           <h1 className="text-2xl font-semibold">CBHS Logs</h1>
           <p className="text-sm text-muted-foreground">Daily entries feed the weekly CBHS report; PDFs are generated from signed weekly summaries.</p>
         </div>
-        <NavActionButton href="/logs/new" label="New log" pendingLabel="Opening log..." icon={Plus} emoji="📝" />
+        <NavActionButton href="/logs/new" label="New log" pendingLabel="Opening log..." />
       </div>
       <div className="overflow-hidden rounded-md border bg-white/95 shadow-lg shadow-primary/5">
         <table className="w-full text-left text-sm">
@@ -37,11 +37,11 @@ export default async function LogsPage() {
                 <td className="p-3">
                   <div className="flex flex-wrap gap-2">
                     <Button asChild size="sm" variant="secondary">
-                      <Link href={`/logs/${entry.id}/edit`}><Pencil className="h-4 w-4" />✏️ Edit</Link>
+                      <Link href={`/logs/${entry.id}/edit`}><Pencil className="h-4 w-4" />Edit</Link>
                     </Button>
                     <form action={deleteLoggedEntry}>
                       <input type="hidden" name="entryId" value={entry.id} />
-                      <Button type="submit" size="sm" variant="destructive"><Trash2 className="h-4 w-4" />🗑️ Delete</Button>
+                      <Button type="submit" size="sm" variant="destructive"><Trash2 className="h-4 w-4" />Delete</Button>
                     </form>
                   </div>
                 </td>
