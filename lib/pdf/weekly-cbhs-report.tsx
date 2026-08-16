@@ -40,6 +40,12 @@ function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).map((part) => part[0]?.toUpperCase()).join("").slice(0, 3);
 }
 
+function weekDate(weekStart: Date, dayIndex: number) {
+  const date = new Date(weekStart);
+  date.setDate(date.getDate() + dayIndex);
+  return date;
+}
+
 function FrequencyBoxes({ frequencies }: { frequencies: Record<string, string> }) {
   const rows = [
     cbhsStandardLines.slice(0, 4),
@@ -112,6 +118,7 @@ export function WeeklyCBHSReport({
           </View>
           {dayNames.map((dayName, dayIndex) => {
             const dayEntries = entries.filter((entry) => entry.date.getDay() === dayIndex);
+            const serviceDate = weekDate(summary.weekStart, dayIndex);
             return (
               <View key={dayName} wrap={false}>
                 {dayEntries.length ? dayEntries.map((entry) => {
@@ -126,7 +133,7 @@ export function WeeklyCBHSReport({
                   );
                 }) : (
                   <View style={styles.row}>
-                    <Text style={[styles.cell, { width: "24%" }]}>{dayName}</Text>
+                    <Text style={[styles.cell, { width: "24%" }]}>{dayName}<Text style={styles.dateLine}>{"\n"}{shortDate(serviceDate)}</Text></Text>
                     <Text style={[styles.cell, { width: "18%" }]} />
                     <Text style={[styles.cell, { width: "48%" }]} />
                     <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]} />
