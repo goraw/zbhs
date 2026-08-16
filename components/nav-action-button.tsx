@@ -8,13 +8,11 @@ import { Button } from "@/components/ui/button";
 export function NavActionButton({
   href,
   label,
-  pendingLabel = "Opening...",
-  emoji
+  pendingLabel = "Opening..."
 }: {
   href: string;
   label: string;
   pendingLabel?: string;
-  emoji?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -31,7 +29,6 @@ export function NavActionButton({
       className="shadow-sm shadow-primary/20"
     >
       {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-      <span aria-hidden="true">{emoji}</span>
       {isPending ? pendingLabel : label}
     </Button>
   );

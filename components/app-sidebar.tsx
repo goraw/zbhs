@@ -33,7 +33,7 @@ export function AppSidebar({ user }: { user: SidebarUser }) {
       <form action={signOutAction} className="mt-8">
         <Button type="submit" variant="secondary" className="w-full">
           <LogOut className="h-4 w-4" />
-          👋 Log out
+          Log out
         </Button>
       </form>
     </aside>

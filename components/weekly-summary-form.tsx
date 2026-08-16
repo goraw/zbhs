@@ -18,11 +18,11 @@ function SubmitButtons() {
     <div className="flex items-end gap-2">
       <Button type="submit" variant="secondary" name="intent" value="draft" disabled={pending}>
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePenLine className="h-4 w-4" />}
-        {pending ? "Saving..." : "💾 Save draft"}
+        {pending ? "Saving..." : "Save draft"}
       </Button>
       <Button type="submit" name="intent" value="sign" disabled={pending}>
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-        {pending ? "Signing..." : "🔒 Sign and PDF"}
+        {pending ? "Signing..." : "Sign and PDF"}
       </Button>
     </div>
   );
@@ -69,7 +69,7 @@ export function WeeklySummaryForm({ clients }: { clients: Client[] }) {
           <Label htmlFor="narrative">Weekly summary</Label>
           <Button type="button" variant="secondary" size="sm" onClick={handleGenerate} disabled={isGenerating}>
             {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {isGenerating ? "Generating..." : "✨ Auto generate summary"}
+            {isGenerating ? "Generating..." : "Auto generate summary"}
           </Button>
         </div>
         <Textarea

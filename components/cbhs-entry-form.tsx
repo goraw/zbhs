@@ -103,13 +103,28 @@ export function CBHSEntryForm({
     const nextDateValue = dateInputValue(nextDate);
     const originalDateValue = entry ? dateInputValue(entry.date) : "";
 
-    if (!entry || nextDateValue === originalDateValue) {
+    if (!entry) {
       onChange(nextDate);
-      if (nextDateValue === originalDateValue) {
-        setDetectedEntry(null);
-        setValue("servicePeriods", entry?.servicePeriods ?? "7AM-9PM", { shouldDirty: false });
-        setValue("behaviorFrequencies", behaviorFrequencies, { shouldDirty: false });
-      }
+      startCheckingExisting(async () => {
+        const existing = await getLoggedEntryForDate(selectedClientId, nextDateValue);
+        setDetectedEntry(existing);
+
+        if (existing) {
+          window.alert("A log is already entered for this date. The saved data will be populated, and submitting will update that log.");
+          populateEntry(existing);
+          return;
+        }
+
+        resetDailyFields();
+      });
+      return;
+    }
+
+    if (nextDateValue === originalDateValue) {
+      onChange(nextDate);
+      setDetectedEntry(null);
+      setValue("servicePeriods", entry.servicePeriods, { shouldDirty: false });
+      setValue("behaviorFrequencies", behaviorFrequencies, { shouldDirty: false });
       return;
     }
 
@@ -123,6 +138,9 @@ export function CBHSEntryForm({
       setDetectedEntry(existing && !isSameEntry ? existing : null);
 
       if (existing) {
+        if (!isSameEntry) {
+          window.alert("A log is already entered for the selected date. The saved data has been populated, and submitting will update that log.");
+        }
         populateEntry(existing);
         return;
       }
@@ -219,7 +237,7 @@ export function CBHSEntryForm({
       {Object.keys(formState.errors).length ? <p className="text-sm text-destructive">Please complete all required fields before logging.</p> : null}
       <Button type="submit" className="w-fit" disabled={isBusy}>
         {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-        {formState.isSubmitting ? (isUpdating ? "Updating..." : "Logging...") : isUpdating ? "✅ Update" : "📝 Log"}
+        {formState.isSubmitting ? (isUpdating ? "Updating..." : "Logging...") : isUpdating ? "Update" : "Log"}
       </Button>
     </form>
   );
