@@ -21,6 +21,17 @@ function dateRangeForDay(date: Date) {
   return { start, end };
 }
 
+function staffInitials(name: string) {
+  // Daily CBHS logs use staff initials as the signature mark; weekly summaries
+  // still require the full typed attestation signature in the weekly action.
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase())
+    .join("")
+    .slice(0, 3);
+}
+
 export async function getLoggedEntryForDate(clientId: string, dateValue: string) {
   await requireUser();
   if (!clientId || !dateValue) return null;
@@ -59,6 +70,7 @@ export async function createLoggedEntry(input: unknown) {
   const durationMinutes = 0;
 
   const entry = await prisma.$transaction(async (tx) => {
+    const signatureText = staffInitials(user.name ?? "Staff");
     const created = await tx.cBHSEntry.create({
       data: {
         clientId: data.clientId,
@@ -73,7 +85,7 @@ export async function createLoggedEntry(input: unknown) {
         staffInterventions: "",
         outcome: "",
         summativeNote: "",
-        signatureText: user.name,
+        signatureText,
         signatureTimestamp: new Date(),
         status: "SIGNED"
       }
@@ -99,6 +111,7 @@ export async function updateLoggedEntry(entryId: string, input: unknown) {
 
   const startTime = combineDateAndTime(data.date, "00:00");
   const endTime = combineDateAndTime(data.date, "00:01");
+  const signatureText = staffInitials(user.name ?? "Staff");
 
   await prisma.$transaction(async (tx) => {
     await tx.cBHSEntry.update({
@@ -110,7 +123,7 @@ export async function updateLoggedEntry(entryId: string, input: unknown) {
         endTime,
         servicePeriods: data.servicePeriods,
         behaviorFrequencies: JSON.stringify(data.behaviorFrequencies),
-        signatureText: user.name,
+        signatureText,
         signatureTimestamp: new Date(),
         status: "SIGNED"
       }
