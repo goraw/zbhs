@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { CBHSEntry, Client } from "@prisma/client";
 import { Check } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { createLoggedEntry, updateLoggedEntry } from "@/lib/actions/entries";
 import { cbhsStandardLines, parseBehaviorFrequencies } from "@/lib/cbhs-standard-lines";
@@ -52,7 +52,7 @@ export function CBHSEntryForm({
     }
   });
 
-  const { register, handleSubmit, formState } = form;
+  const { control, register, handleSubmit, formState } = form;
 
   async function onSubmit(values: FormValues) {
     if (entry) {
@@ -71,7 +71,19 @@ export function CBHSEntryForm({
         </div>
         <div>
           <Label htmlFor="date">Date</Label>
-          <Input id="date" type="date" defaultValue={dateInputValue(entry?.date ?? new Date())} {...register("date", { valueAsDate: true })} />
+          <Controller
+            control={control}
+            name="date"
+            render={({ field }) => (
+              <Input
+                id="date"
+                type="date"
+                value={dateInputValue(field.value)}
+                onBlur={field.onBlur}
+                onChange={(event) => field.onChange(new Date(`${event.target.value}T00:00:00`))}
+              />
+            )}
+          />
         </div>
         <div><Label>Staff</Label><Input value={staffName} readOnly /></div>
       </div>
@@ -103,9 +115,9 @@ export function CBHSEntryForm({
                   className="mt-0 h-8"
                   type="number"
                   inputMode="numeric"
-                  min="0"
+                  min="1"
+                  max="10"
                   step="1"
-                  pattern="[0-9]*"
                   {...register(`behaviorFrequencies.${line.line}`)}
                   aria-label={`Frequency for line ${line.line}`}
                 />

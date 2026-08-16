@@ -27,7 +27,7 @@ export const cbhsEntrySchema = z.object({
   clientId: z.string().min(1),
   date: z.coerce.date(),
   servicePeriods: z.string().min(2).max(1000),
-  behaviorFrequencies: z.record(z.string().regex(/^\d*$/, "Frequency must be a number.").max(20)).default({})
+  behaviorFrequencies: z.record(z.string().regex(/^$|^(10|[1-9])$/, "Frequency must be blank or 1-10.")).default({})
 });
 
 export const weeklySummarySchema = z.object({
