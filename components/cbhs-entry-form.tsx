@@ -47,7 +47,7 @@ export function CBHSEntryForm({
     defaultValues: {
       clientId: entry?.clientId ?? clients[0]?.id ?? "",
       date: entry?.date ?? new Date(),
-      servicePeriods: entry?.servicePeriods ?? "",
+      servicePeriods: entry?.servicePeriods ?? "7AM-9PM",
       behaviorFrequencies
     }
   });
@@ -101,7 +101,11 @@ export function CBHSEntryForm({
                 <span className="font-medium">{line.line}:</span>
                 <Input
                   className="mt-0 h-8"
+                  type="number"
                   inputMode="numeric"
+                  min="0"
+                  step="1"
+                  pattern="[0-9]*"
                   {...register(`behaviorFrequencies.${line.line}`)}
                   aria-label={`Frequency for line ${line.line}`}
                 />

@@ -21,6 +21,10 @@ const styles = StyleSheet.create({
   box: { border: "1px solid #d8e3e5", padding: 6, marginTop: 4 },
   behavior: { marginBottom: 4 },
   dayHeader: { backgroundColor: "#edf4f4", fontWeight: 700 },
+  frequencyRow: { flexDirection: "row", marginBottom: 4 },
+  frequencyItem: { flexDirection: "row", alignItems: "center", width: "25%" },
+  frequencyNumber: { width: 12, fontSize: 10 },
+  frequencyBox: { width: 52, height: 16, border: "1px solid #173036", backgroundColor: "#eef2ff", padding: 2 },
   signature: { marginTop: 12, padding: 8, border: "1px solid #0f6974" },
   footer: { position: "absolute", bottom: 16, left: 28, right: 28, fontSize: 8, color: "#607075", borderTop: "1px solid #d8e3e5", paddingTop: 4 }
 });
@@ -33,6 +37,28 @@ function shortDate(date: Date) {
 
 function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).map((part) => part[0]?.toUpperCase()).join("").slice(0, 3);
+}
+
+function FrequencyBoxes({ frequencies }: { frequencies: Record<string, string> }) {
+  const rows = [
+    cbhsStandardLines.slice(0, 4),
+    cbhsStandardLines.slice(4, 8)
+  ];
+
+  return (
+    <View>
+      {rows.map((row, index) => (
+        <View key={index} style={styles.frequencyRow}>
+          {row.map((line) => (
+            <View key={line.line} style={styles.frequencyItem}>
+              <Text style={styles.frequencyNumber}>{line.line}:</Text>
+              <Text style={styles.frequencyBox}>{frequencies[String(line.line)] || ""}</Text>
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
 }
 
 export function WeeklyCBHSReport({
@@ -95,16 +121,14 @@ export function WeeklyCBHSReport({
                       <Text style={[styles.cell, { width: "14%" }]}>{dayName}</Text>
                       <Text style={[styles.cell, { width: "14%" }]}>{shortDate(entry.date)}</Text>
                       <Text style={[styles.cell, { width: "18%" }]}>{entry.servicePeriods}</Text>
-                      <Text style={[styles.cell, { width: "44%" }]}>
-                        {cbhsStandardLines.map((line) => `${line.line}: ${frequencies[String(line.line)] || ""}`).join("   ")}
-                      </Text>
+                      <View style={[styles.cell, { width: "44%" }]}><FrequencyBoxes frequencies={frequencies} /></View>
                       <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>{initials(entry.staff.name)}</Text>
                     </View>
                   );
                 }) : (
                   <View style={styles.row}>
                     <Text style={[styles.cell, { width: "14%" }]}>{dayName}</Text>
-                    <Text style={[styles.cell, { width: "14%" }]}>Leave blank if none</Text>
+                    <Text style={[styles.cell, { width: "14%" }]} />
                     <Text style={[styles.cell, { width: "18%" }]} />
                     <Text style={[styles.cell, { width: "44%" }]} />
                     <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]} />
