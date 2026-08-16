@@ -59,7 +59,7 @@ export function CBHSEntryForm({
   const { control, register, handleSubmit, formState, setValue } = form;
   const selectedClientId = useWatch({ control, name: "clientId" });
   const selectedDate = useWatch({ control, name: "date" });
-  const activeEntryId = entry?.id ?? detectedEntry?.id;
+  const activeEntryId = detectedEntry?.id ?? entry?.id;
   const isUpdating = Boolean(activeEntryId);
   const isBusy = formState.isSubmitting || isCheckingExisting;
 
@@ -81,6 +81,55 @@ export function CBHSEntryForm({
       }
     });
   }, [entry, selectedClientId, selectedDate, setValue]);
+
+  function populateEntry(existing: NonNullable<ExistingEntry>) {
+    setValue("servicePeriods", existing.servicePeriods, { shouldDirty: false });
+    setValue(
+      "behaviorFrequencies",
+      { ...emptyFrequencies(), ...parseBehaviorFrequencies(existing.behaviorFrequencies) },
+      { shouldDirty: false }
+    );
+  }
+
+  function resetDailyFields() {
+    setValue("servicePeriods", "7AM-9PM", { shouldDirty: false });
+    setValue("behaviorFrequencies", emptyFrequencies(), { shouldDirty: false });
+  }
+
+  function handleEditDateChange(dateValue: string, onChange: (value: Date) => void) {
+    if (!dateValue) return;
+
+    const nextDate = new Date(`${dateValue}T00:00:00`);
+    const nextDateValue = dateInputValue(nextDate);
+    const originalDateValue = entry ? dateInputValue(entry.date) : "";
+
+    if (!entry || nextDateValue === originalDateValue) {
+      onChange(nextDate);
+      if (nextDateValue === originalDateValue) {
+        setDetectedEntry(null);
+        setValue("servicePeriods", entry?.servicePeriods ?? "7AM-9PM", { shouldDirty: false });
+        setValue("behaviorFrequencies", behaviorFrequencies, { shouldDirty: false });
+      }
+      return;
+    }
+
+    const confirmed = window.confirm("Changing the date will reset the editable fields to the selected date. Continue?");
+    if (!confirmed) return;
+
+    onChange(nextDate);
+    startCheckingExisting(async () => {
+      const existing = await getLoggedEntryForDate(selectedClientId, nextDateValue);
+      const isSameEntry = existing?.id === entry.id;
+      setDetectedEntry(existing && !isSameEntry ? existing : null);
+
+      if (existing) {
+        populateEntry(existing);
+        return;
+      }
+
+      resetDailyFields();
+    });
+  }
 
   async function onSubmit(values: FormValues) {
     if (activeEntryId) {
@@ -108,7 +157,7 @@ export function CBHSEntryForm({
                 type="date"
                 value={dateInputValue(field.value)}
                 onBlur={field.onBlur}
-                onChange={(event) => field.onChange(new Date(`${event.target.value}T00:00:00`))}
+                onChange={(event) => handleEditDateChange(event.target.value, field.onChange)}
               />
             )}
           />
