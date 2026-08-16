@@ -157,7 +157,7 @@ export function WeeklyCBHSReport({
           <Text>A representative of the organization attests to the accuracy of this weekly CBHS information.</Text>
           <Text>Printed name: {summary.attestationName || summary.staff.name}</Text>
           <Text>Signature: {summary.signatureText}</Text>
-          <Text>Date of signature: {summary.signatureTimestamp?.toLocaleString()}</Text>
+          <Text>Date of signature: {summary.signatureTimestamp ? shortDate(summary.signatureTimestamp) : ""}</Text>
         </View>
         <Text style={styles.footer}>HCA-style CBHS supportive supervision weekly packet.</Text>
       </Page>
