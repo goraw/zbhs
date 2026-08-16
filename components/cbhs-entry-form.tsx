@@ -2,10 +2,11 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { CBHSEntry, Client } from "@prisma/client";
-import { Check } from "lucide-react";
-import { Controller, useForm } from "react-hook-form";
+import { Check, Loader2 } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { createLoggedEntry, updateLoggedEntry } from "@/lib/actions/entries";
+import { createLoggedEntry, getLoggedEntryForDate, updateLoggedEntry } from "@/lib/actions/entries";
 import { cbhsStandardLines, parseBehaviorFrequencies } from "@/lib/cbhs-standard-lines";
 import { cbhsEntrySchema } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 type FormValues = z.infer<typeof cbhsEntrySchema>;
 type EntryForForm = Pick<CBHSEntry, "id" | "clientId" | "date" | "servicePeriods" | "behaviorFrequencies">;
+type ExistingEntry = Awaited<ReturnType<typeof getLoggedEntryForDate>>;
 
 function dateInputValue(date: Date) {
   const year = date.getFullYear();
@@ -37,6 +39,8 @@ export function CBHSEntryForm({
   staffName: string;
   entry?: EntryForForm;
 }) {
+  const [detectedEntry, setDetectedEntry] = useState<ExistingEntry>(null);
+  const [isCheckingExisting, startCheckingExisting] = useTransition();
   const behaviorFrequencies = {
     ...emptyFrequencies(),
     ...parseBehaviorFrequencies(entry?.behaviorFrequencies)
@@ -52,11 +56,35 @@ export function CBHSEntryForm({
     }
   });
 
-  const { control, register, handleSubmit, formState } = form;
+  const { control, register, handleSubmit, formState, setValue } = form;
+  const selectedClientId = useWatch({ control, name: "clientId" });
+  const selectedDate = useWatch({ control, name: "date" });
+  const activeEntryId = entry?.id ?? detectedEntry?.id;
+  const isUpdating = Boolean(activeEntryId);
+  const isBusy = formState.isSubmitting || isCheckingExisting;
+
+  useEffect(() => {
+    if (entry || !selectedClientId || !selectedDate) return;
+
+    const dateValue = dateInputValue(selectedDate);
+    startCheckingExisting(async () => {
+      const existing = await getLoggedEntryForDate(selectedClientId, dateValue);
+      setDetectedEntry(existing);
+
+      if (existing) {
+        setValue("servicePeriods", existing.servicePeriods, { shouldDirty: false });
+        setValue(
+          "behaviorFrequencies",
+          { ...emptyFrequencies(), ...parseBehaviorFrequencies(existing.behaviorFrequencies) },
+          { shouldDirty: false }
+        );
+      }
+    });
+  }, [entry, selectedClientId, selectedDate, setValue]);
 
   async function onSubmit(values: FormValues) {
-    if (entry) {
-      await updateLoggedEntry(entry.id, values);
+    if (activeEntryId) {
+      await updateLoggedEntry(activeEntryId, values);
       return;
     }
     await createLoggedEntry(values);
@@ -127,6 +155,12 @@ export function CBHSEntryForm({
         </div>
       </div>
 
+      {detectedEntry ? (
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-primary">
+          A log is already added for this client and date. The saved data has been populated, and submitting will update that log.
+        </div>
+      ) : null}
+
       <div className="rounded-md border border-primary/30 bg-muted p-4">
         <Label>Signature</Label>
         <Input value={staffName} readOnly />
@@ -134,9 +168,9 @@ export function CBHSEntryForm({
       </div>
 
       {Object.keys(formState.errors).length ? <p className="text-sm text-destructive">Please complete all required fields before logging.</p> : null}
-      <Button type="submit" className="w-fit">
-        <Check className="h-4 w-4" />
-        Log
+      <Button type="submit" className="w-fit" disabled={isBusy}>
+        {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+        {formState.isSubmitting ? (isUpdating ? "Updating..." : "Logging...") : isUpdating ? "Update" : "Log"}
       </Button>
     </form>
   );

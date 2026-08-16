@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { verifyUserPassword } from "@/lib/security";
+import { cbhsStandardLines, parseBehaviorFrequencies } from "@/lib/cbhs-standard-lines";
 import { weeklySummarySchema } from "@/lib/validation";
 
 function normalizeWeekStart(date: Date) {
@@ -21,6 +22,67 @@ function weekEndFromStart(weekStart: Date) {
   end.setDate(end.getDate() + 6);
   end.setHours(23, 59, 59, 999);
   return end;
+}
+
+function shortDate(date: Date) {
+  return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+}
+
+export async function generateWeeklySummary(clientId: string, weekStartValue: string) {
+  await requireUser();
+  if (!clientId || !weekStartValue) {
+    throw new Error("Client and week are required to generate a summary.");
+  }
+
+  const weekStart = normalizeWeekStart(new Date(`${weekStartValue}T00:00:00`));
+  const weekEnd = weekEndFromStart(weekStart);
+  const [client, entries] = await Promise.all([
+    prisma.client.findUnique({ where: { id: clientId } }),
+    prisma.cBHSEntry.findMany({
+      where: {
+        clientId,
+        date: { gte: weekStart, lte: weekEnd }
+      },
+      include: { staff: true },
+      orderBy: { date: "asc" }
+    })
+  ]);
+
+  if (!client) throw new Error("Client not found.");
+
+  if (!entries.length) {
+    return `No CBHS daily logs were recorded for ${client.name} during ${shortDate(weekStart)} - ${shortDate(weekEnd)}.`;
+  }
+
+  const totals = new Map<number, number>();
+  const serviceDates = entries.map((entry) => shortDate(entry.date));
+  const staffNames = Array.from(new Set(entries.map((entry) => entry.staff.name))).join(", ");
+
+  for (const entry of entries) {
+    const frequencies = parseBehaviorFrequencies(entry.behaviorFrequencies);
+    for (const line of cbhsStandardLines) {
+      const value = Number(frequencies[String(line.line)] || 0);
+      if (Number.isFinite(value) && value > 0) {
+        totals.set(line.line, (totals.get(line.line) ?? 0) + value);
+      }
+    }
+  }
+
+  const behaviorSummary = cbhsStandardLines
+    .map((line) => ({
+      ...line,
+      total: totals.get(line.line) ?? 0
+    }))
+    .filter((line) => line.total > 0)
+    .map((line) => `${line.behavior}: ${line.total}`)
+    .join("; ");
+
+  return [
+    `During the week of ${shortDate(weekStart)} - ${shortDate(weekEnd)}, ${client.name} received CBHS supportive supervision with ${entries.length} daily log${entries.length === 1 ? "" : "s"} recorded.`,
+    `Service dates documented: ${serviceDates.join(", ")}.`,
+    behaviorSummary ? `Behavior frequency totals by approved intervention line: ${behaviorSummary}.` : "No behavior frequencies were recorded for the week.",
+    `Caregiver/staff documentation was completed by: ${staffNames}.`
+  ].join("\n\n");
 }
 
 export async function saveWeeklySummary(formData: FormData) {

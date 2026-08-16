@@ -1,12 +1,7 @@
 import Link from "next/link";
 import { FileText, Lock } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { saveWeeklySummary } from "@/lib/actions/weekly-summaries";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { WeeklySummaryForm } from "@/components/weekly-summary-form";
 
 export const dynamic = "force-dynamic";
 
@@ -27,38 +22,7 @@ export default async function WeeklyPage() {
         <p className="text-sm text-muted-foreground">Summarize daily support logs into a weekly supervision packet.</p>
       </div>
 
-      <form action={saveWeeklySummary} className="grid gap-4 rounded-md border bg-white p-5 shadow-sm lg:grid-cols-2">
-        <div>
-          <Label htmlFor="clientId">Client</Label>
-          <Select id="clientId" name="clientId" required>
-            {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="weekStart">Week of</Label>
-          <Input id="weekStart" name="weekStart" type="date" required />
-        </div>
-        <div className="lg:col-span-2">
-          <Label htmlFor="narrative">Weekly summary</Label>
-          <Textarea id="narrative" name="narrative" required placeholder="Summarize the week for this client." />
-        </div>
-        <div>
-          <Label htmlFor="attestationName">Printed attestation name</Label>
-          <Input id="attestationName" name="attestationName" />
-        </div>
-        <div>
-          <Label htmlFor="signatureText">Typed signature</Label>
-          <Input id="signatureText" name="signatureText" />
-        </div>
-        <div>
-          <Label htmlFor="password">Password to sign</Label>
-          <Input id="password" name="password" type="password" autoComplete="current-password" />
-        </div>
-        <div className="flex items-end gap-2">
-          <Button type="submit" variant="secondary" name="intent" value="draft">Save draft</Button>
-          <Button type="submit" name="intent" value="sign"><Lock className="h-4 w-4" />Sign and PDF</Button>
-        </div>
-      </form>
+      <WeeklySummaryForm clients={clients} />
 
       <div className="overflow-hidden rounded-md border bg-white shadow-sm">
         <table className="w-full text-left text-sm">

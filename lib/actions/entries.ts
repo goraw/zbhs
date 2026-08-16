@@ -13,6 +13,43 @@ function combineDateAndTime(date: Date, time: string) {
   return value;
 }
 
+function dateRangeForDay(date: Date) {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end };
+}
+
+export async function getLoggedEntryForDate(clientId: string, dateValue: string) {
+  await requireUser();
+  if (!clientId || !dateValue) return null;
+
+  const date = new Date(`${dateValue}T00:00:00`);
+  const { start, end } = dateRangeForDay(date);
+  const entry = await prisma.cBHSEntry.findFirst({
+    where: {
+      clientId,
+      date: { gte: start, lt: end }
+    },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      clientId: true,
+      date: true,
+      servicePeriods: true,
+      behaviorFrequencies: true
+    }
+  });
+
+  if (!entry) return null;
+
+  return {
+    ...entry,
+    date: entry.date.toISOString()
+  };
+}
+
 export async function createLoggedEntry(input: unknown) {
   const user = await requireUser();
   const data = cbhsEntrySchema.parse(input);
