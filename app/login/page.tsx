@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { LogIn } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +34,8 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center px-4">
       <form action={onSubmit} className="w-full max-w-sm rounded-md border bg-white p-6 shadow-sm">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold">CBHS Secure Logs</h1>
+          <BrandLogo className="mb-5" />
+          <h1 className="text-2xl font-semibold">Secure provider sign in</h1>
           <p className="mt-1 text-sm text-muted-foreground">Sign in to continue.</p>
         </div>
         <div className="space-y-4">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BookOpen, CalendarDays, ClipboardList, FileClock, LayoutDashboard, LogOut, Shield, Users } from "lucide-react";
 import { signOutAction } from "@/lib/actions/sign-out";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 
 type SidebarUser = { name?: string | null; role: "SUPER_ADMIN" | "STAFF" };
@@ -18,8 +19,8 @@ export function AppSidebar({ user }: { user: SidebarUser }) {
 
   return (
     <aside className="hidden min-h-screen w-64 border-r bg-white/95 p-4 shadow-xl shadow-primary/5 backdrop-blur md:block">
-      <div className="mb-6">
-        <div className="text-lg font-semibold text-primary">CBHS Logs</div>
+      <div className="mb-6 space-y-3">
+        <BrandLogo />
         <div className="text-sm text-muted-foreground">{user.name}</div>
       </div>
       <nav className="space-y-1">
