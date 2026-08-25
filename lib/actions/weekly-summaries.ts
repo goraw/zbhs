@@ -50,14 +50,14 @@ export async function generateWeeklySummary(clientId: string, weekStartValue: st
   if (!client) throw new Error("Client not found.");
 
   if (!entries.length) {
-    return `No CBHS daily logs were recorded for ${client.name} during ${shortDate(weekStart)} - ${shortDate(weekEnd)}.`;
+    return `No daily support logs were recorded for ${client.name} during ${shortDate(weekStart)} - ${shortDate(weekEnd)}.`;
   }
 
   const serviceDates = entries.map((entry) => shortDate(entry.date));
   const staffNames = Array.from(new Set(entries.map((entry) => entry.staff.name))).join(", ");
 
   return [
-    `During the week of ${shortDate(weekStart)} - ${shortDate(weekEnd)}, ${client.name} received CBHS supportive supervision with ${entries.length} daily log${entries.length === 1 ? "" : "s"} recorded.`,
+    `During the week of ${shortDate(weekStart)} - ${shortDate(weekEnd)}, ${client.name} received supportive supervision with ${entries.length} daily log${entries.length === 1 ? "" : "s"} recorded.`,
     `Service dates documented: ${serviceDates.join(", ")}.`,
     `Caregiver/staff documentation was completed by: ${staffNames}.`
   ].join("\n\n");
