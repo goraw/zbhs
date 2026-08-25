@@ -6,6 +6,8 @@ import { cbhsStandardLines, parseBehaviorFrequencies } from "@/lib/cbhs-standard
 type SummaryWithRelations = WeeklySummary & { client: Client; staff: User };
 type EntryWithRelations = CBHSEntry & {
   staff: User;
+  firstShiftStaff: User | null;
+  secondShiftStaff: User | null;
 };
 
 const styles = StyleSheet.create({
@@ -54,6 +56,12 @@ function frequencySummary(frequencies: Record<string, string>) {
     })
     .filter(Boolean)
     .join(", ");
+}
+
+function shiftInitials(entry: EntryWithRelations) {
+  const first = initials(entry.firstShiftStaff?.name ?? entry.staff.name);
+  const second = initials(entry.secondShiftStaff?.name ?? entry.staff.name);
+  return first === second ? first : `${first} / ${second}`;
 }
 
 export function WeeklyCBHSReport({
@@ -116,7 +124,7 @@ export function WeeklyCBHSReport({
                       <Text style={[styles.cell, { width: "24%" }]}>{dayName}<Text style={styles.dateLine}>{"\n"}{shortDate(entry.date)}</Text></Text>
                       <Text style={[styles.cell, { width: "18%" }]}>{entry.servicePeriods}</Text>
                       <Text style={[styles.cell, styles.frequencyText, { width: "48%" }]}>{frequencySummary(frequencies)}</Text>
-                      <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>{initials(entry.staff.name)}</Text>
+                      <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>{shiftInitials(entry)}</Text>
                     </View>
                   );
                 }) : (

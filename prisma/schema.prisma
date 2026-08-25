@@ -36,7 +36,9 @@ model User {
   forcePasswordReset Boolean     @default(false)
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
-  entries            CBHSEntry[]
+  entries            CBHSEntry[]    @relation("EntryStaff")
+  firstShiftEntries  CBHSEntry[]    @relation("FirstShiftStaff")
+  secondShiftEntries CBHSEntry[]    @relation("SecondShiftStaff")
   weeklySummaries    WeeklySummary[]
   auditLogs          AuditLog[]
 }
@@ -74,6 +76,8 @@ model CBHSEntry {
   id                 String          @id @default(cuid())
   clientId           String
   staffId            String
+  firstShiftStaffId  String?
+  secondShiftStaffId String?
   date               DateTime
   startTime          DateTime
   endTime            DateTime
@@ -90,11 +94,15 @@ model CBHSEntry {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   client             Client          @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  staff              User            @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  staff              User            @relation("EntryStaff", fields: [staffId], references: [id], onDelete: Restrict)
+  firstShiftStaff    User?           @relation("FirstShiftStaff", fields: [firstShiftStaffId], references: [id], onDelete: Restrict)
+  secondShiftStaff   User?           @relation("SecondShiftStaff", fields: [secondShiftStaffId], references: [id], onDelete: Restrict)
   behaviors          EntryBehavior[]
 
   @@index([clientId])
   @@index([staffId])
+  @@index([firstShiftStaffId])
+  @@index([secondShiftStaffId])
   @@index([status])
 }
 

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         date: { gte: summary.weekStart, lte: summary.weekEnd },
         status: "SIGNED"
       },
-      include: { staff: true },
+      include: { staff: true, firstShiftStaff: true, secondShiftStaff: true },
       orderBy: { date: "asc" }
     });
 

@@ -49,7 +49,9 @@ export async function getLoggedEntryForDate(clientId: string, dateValue: string)
       clientId: true,
       date: true,
       servicePeriods: true,
-      behaviorFrequencies: true
+      behaviorFrequencies: true,
+      firstShiftStaffId: true,
+      secondShiftStaffId: true
     }
   });
 
@@ -75,6 +77,8 @@ export async function createLoggedEntry(input: unknown) {
       data: {
         clientId: data.clientId,
         staffId: user.id,
+        firstShiftStaffId: data.firstShiftStaffId,
+        secondShiftStaffId: data.secondShiftStaffId,
         date: data.date,
         startTime,
         endTime,
@@ -118,6 +122,8 @@ export async function updateLoggedEntry(entryId: string, input: unknown) {
       where: { id: entryId },
       data: {
         clientId: data.clientId,
+        firstShiftStaffId: data.firstShiftStaffId,
+        secondShiftStaffId: data.secondShiftStaffId,
         date: data.date,
         startTime,
         endTime,

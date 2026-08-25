@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { CBHSEntry, Client } from "@prisma/client";
+import type { CBHSEntry, Client, User } from "@prisma/client";
 import { Check, Loader2, X } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -16,8 +16,9 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 type FormValues = z.infer<typeof cbhsEntrySchema>;
-type EntryForForm = Pick<CBHSEntry, "id" | "clientId" | "date" | "servicePeriods" | "behaviorFrequencies">;
+type EntryForForm = Pick<CBHSEntry, "id" | "clientId" | "date" | "servicePeriods" | "behaviorFrequencies" | "firstShiftStaffId" | "secondShiftStaffId">;
 type ExistingEntry = Awaited<ReturnType<typeof getLoggedEntryForDate>>;
+type StaffUser = Pick<User, "id" | "name">;
 
 function dateInputValue(date: Date) {
   const year = date.getFullYear();
@@ -39,13 +40,48 @@ function staffInitials(name: string) {
     .slice(0, 3);
 }
 
+function findStaffId(staffUsers: StaffUser[], name: string) {
+  const normalized = name.trim().toLowerCase();
+  return staffUsers.find((staff) => staff.name.trim().toLowerCase() === normalized)?.id;
+}
+
+function defaultShiftStaffIds(staffUsers: StaffUser[], date: Date) {
+  const dateValue = dateInputValue(date);
+  const fallbackId = staffUsers[0]?.id ?? "";
+  const fikiraddisId = findStaffId(staffUsers, "Fikiraddis Worku");
+  const colletarId = findStaffId(staffUsers, "COLLETAR CHISANU");
+  const kidistId = findStaffId(staffUsers, "Kidist Wolemicheal");
+  const zillahId = findStaffId(staffUsers, "Zillah Jombee");
+
+  if (dateValue >= "2024-12-23" && dateValue <= "2025-01-10") {
+    return {
+      firstShiftStaffId: colletarId ?? fallbackId,
+      secondShiftStaffId: kidistId ?? fallbackId
+    };
+  }
+
+  if (dateValue >= "2026-08-04" && dateValue <= "2026-08-10") {
+    return {
+      firstShiftStaffId: zillahId ?? fallbackId,
+      secondShiftStaffId: kidistId ?? fallbackId
+    };
+  }
+
+  return {
+    firstShiftStaffId: fikiraddisId ?? fallbackId,
+    secondShiftStaffId: date.getDay() === 3 ? kidistId ?? fallbackId : dateValue >= "2026-06-01" ? zillahId ?? fallbackId : colletarId ?? fallbackId
+  };
+}
+
 export function CBHSEntryForm({
   clients,
   staffName,
+  staffUsers,
   entry
 }: {
   clients: Client[];
   staffName: string;
+  staffUsers: StaffUser[];
   entry?: EntryForForm;
 }) {
   const [detectedEntry, setDetectedEntry] = useState<ExistingEntry>(null);
@@ -55,11 +91,14 @@ export function CBHSEntryForm({
     ...emptyFrequencies(),
     ...parseBehaviorFrequencies(entry?.behaviorFrequencies)
   };
+  const shiftDefaults = defaultShiftStaffIds(staffUsers, entry?.date ?? new Date());
 
   const form = useForm<FormValues>({
     resolver: zodResolver(cbhsEntrySchema),
     defaultValues: {
       clientId: entry?.clientId ?? clients[0]?.id ?? "",
+      firstShiftStaffId: entry?.firstShiftStaffId ?? shiftDefaults.firstShiftStaffId,
+      secondShiftStaffId: entry?.secondShiftStaffId ?? shiftDefaults.secondShiftStaffId,
       date: entry?.date ?? new Date(),
       servicePeriods: entry?.servicePeriods ?? "7AM-9PM",
       behaviorFrequencies
@@ -83,8 +122,11 @@ export function CBHSEntryForm({
       setDetectedEntry(existing);
 
       if (existing) {
+        const defaults = defaultShiftStaffIds(staffUsers, new Date(existing.date));
         setDuplicateWarning("A log is already entered for this date. The saved data has been populated, and submitting will update that log.");
         setValue("servicePeriods", existing.servicePeriods, { shouldDirty: false });
+        setValue("firstShiftStaffId", existing.firstShiftStaffId ?? defaults.firstShiftStaffId, { shouldDirty: false });
+        setValue("secondShiftStaffId", existing.secondShiftStaffId ?? defaults.secondShiftStaffId, { shouldDirty: false });
         setValue(
           "behaviorFrequencies",
           { ...emptyFrequencies(), ...parseBehaviorFrequencies(existing.behaviorFrequencies) },
@@ -94,11 +136,17 @@ export function CBHSEntryForm({
       }
 
       setDuplicateWarning("");
+      const defaults = defaultShiftStaffIds(staffUsers, selectedDate);
+      setValue("firstShiftStaffId", defaults.firstShiftStaffId, { shouldDirty: false });
+      setValue("secondShiftStaffId", defaults.secondShiftStaffId, { shouldDirty: false });
     });
-  }, [entry, selectedClientId, selectedDate, setValue]);
+  }, [entry, selectedClientId, selectedDate, setValue, staffUsers]);
 
   function populateEntry(existing: NonNullable<ExistingEntry>) {
+    const defaults = defaultShiftStaffIds(staffUsers, new Date(existing.date));
     setValue("servicePeriods", existing.servicePeriods, { shouldDirty: false });
+    setValue("firstShiftStaffId", existing.firstShiftStaffId ?? defaults.firstShiftStaffId, { shouldDirty: false });
+    setValue("secondShiftStaffId", existing.secondShiftStaffId ?? defaults.secondShiftStaffId, { shouldDirty: false });
     setValue(
       "behaviorFrequencies",
       { ...emptyFrequencies(), ...parseBehaviorFrequencies(existing.behaviorFrequencies) },
@@ -106,8 +154,11 @@ export function CBHSEntryForm({
     );
   }
 
-  function resetDailyFields() {
+  function resetDailyFields(date = selectedDate) {
+    const defaults = defaultShiftStaffIds(staffUsers, date);
     setValue("servicePeriods", "7AM-9PM", { shouldDirty: false });
+    setValue("firstShiftStaffId", defaults.firstShiftStaffId, { shouldDirty: false });
+    setValue("secondShiftStaffId", defaults.secondShiftStaffId, { shouldDirty: false });
     setValue("behaviorFrequencies", emptyFrequencies(), { shouldDirty: false });
   }
 
@@ -131,7 +182,7 @@ export function CBHSEntryForm({
         }
 
         setDuplicateWarning("");
-        resetDailyFields();
+        resetDailyFields(nextDate);
       });
       return;
     }
@@ -141,6 +192,8 @@ export function CBHSEntryForm({
       setDetectedEntry(null);
       setDuplicateWarning("");
       setValue("servicePeriods", entry.servicePeriods, { shouldDirty: false });
+      setValue("firstShiftStaffId", entry.firstShiftStaffId ?? shiftDefaults.firstShiftStaffId, { shouldDirty: false });
+      setValue("secondShiftStaffId", entry.secondShiftStaffId ?? shiftDefaults.secondShiftStaffId, { shouldDirty: false });
       setValue("behaviorFrequencies", behaviorFrequencies, { shouldDirty: false });
       return;
     }
@@ -165,7 +218,7 @@ export function CBHSEntryForm({
       }
 
       setDuplicateWarning("");
-      resetDailyFields();
+      resetDailyFields(nextDate);
     });
   }
 
@@ -200,7 +253,22 @@ export function CBHSEntryForm({
             )}
           />
         </div>
-        <div><Label>Staff</Label><Input value={staffName} readOnly /></div>
+        <div><Label>Logged by</Label><Input value={staffName} readOnly /></div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <Label htmlFor="firstShiftStaffId">First shift staff (6AM-6PM)</Label>
+          <Select id="firstShiftStaffId" {...register("firstShiftStaffId")}>
+            {staffUsers.map((staff) => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="secondShiftStaffId">Second shift staff (6PM-6AM)</Label>
+          <Select id="secondShiftStaffId" {...register("secondShiftStaffId")}>
+            {staffUsers.map((staff) => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
+          </Select>
+        </div>
       </div>
 
       {duplicateWarning ? (

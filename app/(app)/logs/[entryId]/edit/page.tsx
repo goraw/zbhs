@@ -7,9 +7,14 @@ export const dynamic = "force-dynamic";
 
 export default async function EditLogPage({ params }: { params: Promise<{ entryId: string }> }) {
   const [{ entryId }, user] = await Promise.all([params, getCurrentUser()]);
-  const [entry, clients] = await Promise.all([
+  const [entry, clients, staffUsers] = await Promise.all([
     prisma.cBHSEntry.findUnique({ where: { id: entryId } }),
-    prisma.client.findMany({ orderBy: { name: "asc" } })
+    prisma.client.findMany({ orderBy: { name: "asc" } }),
+    prisma.user.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true }
+    })
   ]);
 
   if (!entry) notFound();
@@ -17,7 +22,7 @@ export default async function EditLogPage({ params }: { params: Promise<{ entryI
   return (
     <section>
       <h1 className="text-2xl font-semibold">Edit CBHS Log</h1>
-      <CBHSEntryForm clients={clients} staffName={user?.name ?? ""} entry={entry} />
+      <CBHSEntryForm clients={clients} staffName={user?.name ?? ""} staffUsers={staffUsers} entry={entry} />
     </section>
   );
 }
