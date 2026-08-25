@@ -22,10 +22,7 @@ const styles = StyleSheet.create({
   behavior: { marginBottom: 2 },
   dayHeader: { backgroundColor: "#edf4f4", fontWeight: 700 },
   dateLine: { marginTop: 2, color: "#506368" },
-  frequencyRow: { flexDirection: "row", marginBottom: 2 },
-  frequencyItem: { flexDirection: "row", alignItems: "center", width: "25%" },
-  frequencyNumber: { width: 10, fontSize: 8 },
-  frequencyBox: { width: 44, height: 13, border: "1px solid #173036", backgroundColor: "#eef2ff", padding: 1 },
+  frequencyText: { lineHeight: 1.35 },
   summaryBox: { border: "1px solid #d8e3e5", padding: 5, minHeight: 40, lineHeight: 1.2 },
   signature: { marginTop: 6, padding: 6, border: "1px solid #0f6974" },
   signatureRow: { flexDirection: "row", gap: 14, marginTop: 10 },
@@ -49,26 +46,14 @@ function weekDate(weekStart: Date, dayIndex: number) {
   return date;
 }
 
-function FrequencyBoxes({ frequencies }: { frequencies: Record<string, string> }) {
-  const rows = [
-    cbhsStandardLines.slice(0, 4),
-    cbhsStandardLines.slice(4, 8)
-  ];
-
-  return (
-    <View>
-      {rows.map((row, index) => (
-        <View key={index} style={styles.frequencyRow}>
-          {row.map((line) => (
-            <View key={line.line} style={styles.frequencyItem}>
-              <Text style={styles.frequencyNumber}>{line.line}:</Text>
-              <Text style={styles.frequencyBox}>{frequencies[String(line.line)] || ""}</Text>
-            </View>
-          ))}
-        </View>
-      ))}
-    </View>
-  );
+function frequencySummary(frequencies: Record<string, string>) {
+  return cbhsStandardLines
+    .map((line) => {
+      const value = frequencies[String(line.line)];
+      return value ? `${line.line} -> ${value}` : "";
+    })
+    .filter(Boolean)
+    .join(", ");
 }
 
 export function WeeklyCBHSReport({
@@ -130,7 +115,7 @@ export function WeeklyCBHSReport({
                     <View key={entry.id} style={styles.row}>
                       <Text style={[styles.cell, { width: "24%" }]}>{dayName}<Text style={styles.dateLine}>{"\n"}{shortDate(entry.date)}</Text></Text>
                       <Text style={[styles.cell, { width: "18%" }]}>{entry.servicePeriods}</Text>
-                      <View style={[styles.cell, { width: "48%" }]}><FrequencyBoxes frequencies={frequencies} /></View>
+                      <Text style={[styles.cell, styles.frequencyText, { width: "48%" }]}>{frequencySummary(frequencies)}</Text>
                       <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>{initials(entry.staff.name)}</Text>
                     </View>
                   );
