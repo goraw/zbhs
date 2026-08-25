@@ -130,10 +130,12 @@ export function CBHSEntryForm({
   const selectedClientId = useWatch({ control, name: "clientId" });
   const selectedDate = useWatch({ control, name: "date" });
   const selectedShift = useWatch({ control, name: "shift" });
+  const selectedShiftStaffId = useWatch({ control, name: "shiftStaffId" });
   const activeEntryId = detectedEntry?.id ?? entry?.id;
   const isUpdating = Boolean(activeEntryId);
   const isBusy = formState.isSubmitting || isCheckingExisting;
-  const displayedInitials = staffInitials(staffName);
+  const selectedShiftStaffName = selectableStaffUsers.find((staff) => staff.id === selectedShiftStaffId)?.name ?? staffName;
+  const displayedInitials = staffInitials(selectedShiftStaffName);
 
   useEffect(() => {
     if (entry || !selectedClientId || !selectedDate || !selectedShift) return;
@@ -365,7 +367,7 @@ export function CBHSEntryForm({
       <div className="rounded-md border border-primary/30 bg-muted p-4">
         <Label>Staff Initials</Label>
         <Input value={displayedInitials} readOnly />
-        <p className="mt-2 text-sm text-muted-foreground">The logged-in user's initials are recorded with the current date and time when this entry is logged.</p>
+        <p className="mt-2 text-sm text-muted-foreground">The selected staff member's initials are recorded with the current date and time when this entry is logged.</p>
       </div>
 
       {Object.keys(formState.errors).length ? <p className="text-sm text-destructive">Please complete all required fields before logging.</p> : null}

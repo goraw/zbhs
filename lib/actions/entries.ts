@@ -77,7 +77,14 @@ export async function createLoggedEntry(input: unknown) {
   const secondShiftStaffId = data.shift === "SECOND" ? data.shiftStaffId : null;
 
   const entry = await prisma.$transaction(async (tx) => {
-    const signatureText = staffInitials(user.name ?? "Staff");
+    const shiftStaff = await tx.user.findUnique({
+      where: { id: data.shiftStaffId },
+      select: { name: true, isActive: true, role: true }
+    });
+    if (!shiftStaff || !shiftStaff.isActive || shiftStaff.role !== "STAFF") {
+      throw new Error("Selected staff member is not active.");
+    }
+    const signatureText = staffInitials(shiftStaff.name);
     const created = await tx.cBHSEntry.create({
       data: {
         clientId: data.clientId,
@@ -122,11 +129,19 @@ export async function updateLoggedEntry(entryId: string, input: unknown) {
 
   const startTime = combineDateAndTime(data.date, "00:00");
   const endTime = combineDateAndTime(data.date, "00:01");
-  const signatureText = staffInitials(user.name ?? "Staff");
   const firstShiftStaffId = data.shift === "FIRST" ? data.shiftStaffId : null;
   const secondShiftStaffId = data.shift === "SECOND" ? data.shiftStaffId : null;
 
   await prisma.$transaction(async (tx) => {
+    const shiftStaff = await tx.user.findUnique({
+      where: { id: data.shiftStaffId },
+      select: { name: true, isActive: true, role: true }
+    });
+    if (!shiftStaff || !shiftStaff.isActive || shiftStaff.role !== "STAFF") {
+      throw new Error("Selected staff member is not active.");
+    }
+    const signatureText = staffInitials(shiftStaff.name);
+
     await tx.cBHSEntry.update({
       where: { id: entryId },
       data: {
