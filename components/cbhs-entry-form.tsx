@@ -89,7 +89,7 @@ function defaultShiftStaffId(staffUsers: StaffUser[], date: Date, shift: "FIRST"
 }
 
 function defaultServicePeriods(shift: "FIRST" | "SECOND") {
-  return shift === "FIRST" ? "6AM-6PM" : "6PM-6AM";
+  return shift === "FIRST" ? "6:30AM-7:30AM, 12PM-1PM" : "6PM-7PM";
 }
 
 export function CBHSEntryForm({

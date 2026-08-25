@@ -107,7 +107,7 @@ async function main() {
         shiftStaffId: firstStaff.id,
         firstShiftStaffId: firstStaff.id,
         secondShiftStaffId: null,
-        servicePeriods: "6AM-6PM",
+        servicePeriods: "6:30AM-7:30AM, 12PM-1PM",
         signatureText: initials(firstStaff.name)
       }
     });
@@ -122,7 +122,7 @@ async function main() {
           shiftStaffId: secondStaff.id,
           firstShiftStaffId: null,
           secondShiftStaffId: secondStaff.id,
-          servicePeriods: "6PM-6AM",
+          servicePeriods: "6PM-7PM",
           signatureText: initials(secondStaff.name)
         }
       });
@@ -142,7 +142,7 @@ async function main() {
         startTime: source.startTime,
         endTime: source.endTime,
         durationMinutes: source.durationMinutes,
-        servicePeriods: "6PM-6AM",
+        servicePeriods: "6PM-7PM",
         behaviorFrequencies: "{}",
         triggers: "",
         staffInterventions: "",

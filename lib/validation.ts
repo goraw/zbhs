@@ -23,6 +23,17 @@ export const behaviorSchema = z.object({
   severity: z.coerce.number().int().min(1).max(5)
 });
 
+function servicePeriodCount(value: string) {
+  return value
+    .split(/[\n,;]+/)
+    .map((period) => period.trim())
+    .filter(Boolean).length;
+}
+
+function behaviorFrequencyTotal(value: Record<string, string>) {
+  return Object.values(value).reduce((total, frequency) => total + (frequency ? Number(frequency) : 0), 0);
+}
+
 export const cbhsEntrySchema = z.object({
   clientId: z.string().min(1),
   shift: z.enum(["FIRST", "SECOND"]),
@@ -30,6 +41,16 @@ export const cbhsEntrySchema = z.object({
   date: z.coerce.date(),
   servicePeriods: z.string().min(2).max(1000),
   behaviorFrequencies: z.record(z.string().regex(/^$|^(10|[1-9])$/, "Frequency must be blank or 1-10.")).default({})
+}).superRefine((value, context) => {
+  const periods = servicePeriodCount(value.servicePeriods);
+  const frequencies = behaviorFrequencyTotal(value.behaviorFrequencies);
+  if (periods !== frequencies) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["servicePeriods"],
+      message: "Service period count must match the total behavior frequency count."
+    });
+  }
 });
 
 export const weeklySummarySchema = z.object({
