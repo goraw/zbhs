@@ -25,8 +25,8 @@ export const behaviorSchema = z.object({
 
 export const cbhsEntrySchema = z.object({
   clientId: z.string().min(1),
-  firstShiftStaffId: z.string().min(1),
-  secondShiftStaffId: z.string().min(1),
+  shift: z.enum(["FIRST", "SECOND"]),
+  shiftStaffId: z.string().min(1),
   date: z.coerce.date(),
   servicePeriods: z.string().min(2).max(1000),
   behaviorFrequencies: z.record(z.string().regex(/^$|^(10|[1-9])$/, "Frequency must be blank or 1-10.")).default({})

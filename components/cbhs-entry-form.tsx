@@ -16,7 +16,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 type FormValues = z.infer<typeof cbhsEntrySchema>;
-type EntryForForm = Pick<CBHSEntry, "id" | "clientId" | "date" | "servicePeriods" | "behaviorFrequencies" | "firstShiftStaffId" | "secondShiftStaffId">;
+type EntryForForm = Pick<CBHSEntry, "id" | "clientId" | "date" | "servicePeriods" | "behaviorFrequencies" | "shift" | "shiftStaffId" | "firstShiftStaffId" | "secondShiftStaffId">;
 type ExistingEntry = Awaited<ReturnType<typeof getLoggedEntryForDate>>;
 type StaffUser = Pick<User, "id" | "name">;
 
@@ -83,6 +83,15 @@ function defaultShiftStaffIds(staffUsers: StaffUser[], date: Date) {
   };
 }
 
+function defaultShiftStaffId(staffUsers: StaffUser[], date: Date, shift: "FIRST" | "SECOND") {
+  const defaults = defaultShiftStaffIds(staffUsers, date);
+  return shift === "FIRST" ? defaults.firstShiftStaffId : defaults.secondShiftStaffId;
+}
+
+function defaultServicePeriods(shift: "FIRST" | "SECOND") {
+  return shift === "FIRST" ? "6AM-6PM" : "6PM-6AM";
+}
+
 export function CBHSEntryForm({
   clients,
   staffName,
@@ -102,16 +111,17 @@ export function CBHSEntryForm({
     ...emptyFrequencies(),
     ...parseBehaviorFrequencies(entry?.behaviorFrequencies)
   };
-  const shiftDefaults = defaultShiftStaffIds(selectableStaffUsers, entry?.date ?? new Date());
+  const initialShift = entry?.shift ?? "FIRST";
+  const initialDate = entry?.date ?? new Date();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(cbhsEntrySchema),
     defaultValues: {
       clientId: entry?.clientId ?? clients[0]?.id ?? "",
-      firstShiftStaffId: entry?.firstShiftStaffId ?? shiftDefaults.firstShiftStaffId,
-      secondShiftStaffId: entry?.secondShiftStaffId ?? shiftDefaults.secondShiftStaffId,
-      date: entry?.date ?? new Date(),
-      servicePeriods: entry?.servicePeriods ?? "7AM-9PM",
+      shift: initialShift,
+      shiftStaffId: entry?.shiftStaffId ?? defaultShiftStaffId(selectableStaffUsers, initialDate, initialShift),
+      date: initialDate,
+      servicePeriods: entry?.servicePeriods ?? defaultServicePeriods(initialShift),
       behaviorFrequencies
     }
   });
@@ -119,25 +129,25 @@ export function CBHSEntryForm({
   const { control, register, handleSubmit, formState, setValue } = form;
   const selectedClientId = useWatch({ control, name: "clientId" });
   const selectedDate = useWatch({ control, name: "date" });
+  const selectedShift = useWatch({ control, name: "shift" });
   const activeEntryId = detectedEntry?.id ?? entry?.id;
   const isUpdating = Boolean(activeEntryId);
   const isBusy = formState.isSubmitting || isCheckingExisting;
   const displayedInitials = staffInitials(staffName);
 
   useEffect(() => {
-    if (entry || !selectedClientId || !selectedDate) return;
+    if (entry || !selectedClientId || !selectedDate || !selectedShift) return;
 
     const dateValue = dateInputValue(selectedDate);
     startCheckingExisting(async () => {
-      const existing = await getLoggedEntryForDate(selectedClientId, dateValue);
+      const existing = await getLoggedEntryForDate(selectedClientId, dateValue, selectedShift);
       setDetectedEntry(existing);
 
       if (existing) {
-        const defaults = defaultShiftStaffIds(staffUsers, new Date(existing.date));
-        setDuplicateWarning("A log is already entered for this date. The saved data has been populated, and submitting will update that log.");
+        const shiftStaffId = existing.shiftStaffId ?? defaultShiftStaffId(selectableStaffUsers, new Date(existing.date), selectedShift);
+        setDuplicateWarning(`A ${selectedShift === "FIRST" ? "first" : "second"} shift log is already entered for this date. The saved data has been populated, and submitting will update that log.`);
         setValue("servicePeriods", existing.servicePeriods, { shouldDirty: false });
-        setValue("firstShiftStaffId", existing.firstShiftStaffId ?? defaults.firstShiftStaffId, { shouldDirty: false });
-        setValue("secondShiftStaffId", existing.secondShiftStaffId ?? defaults.secondShiftStaffId, { shouldDirty: false });
+        setValue("shiftStaffId", shiftStaffId, { shouldDirty: false });
         setValue(
           "behaviorFrequencies",
           { ...emptyFrequencies(), ...parseBehaviorFrequencies(existing.behaviorFrequencies) },
@@ -147,17 +157,16 @@ export function CBHSEntryForm({
       }
 
       setDuplicateWarning("");
-      const defaults = defaultShiftStaffIds(selectableStaffUsers, selectedDate);
-      setValue("firstShiftStaffId", defaults.firstShiftStaffId, { shouldDirty: false });
-      setValue("secondShiftStaffId", defaults.secondShiftStaffId, { shouldDirty: false });
+      setValue("shiftStaffId", defaultShiftStaffId(selectableStaffUsers, selectedDate, selectedShift), { shouldDirty: false });
+      setValue("servicePeriods", defaultServicePeriods(selectedShift), { shouldDirty: false });
     });
-  }, [entry, selectedClientId, selectedDate, setValue, selectableStaffUsers]);
+  }, [entry, selectedClientId, selectedDate, selectedShift, setValue, selectableStaffUsers]);
 
   function populateEntry(existing: NonNullable<ExistingEntry>) {
-    const defaults = defaultShiftStaffIds(selectableStaffUsers, new Date(existing.date));
+    const shift = existing.shift ?? selectedShift;
     setValue("servicePeriods", existing.servicePeriods, { shouldDirty: false });
-    setValue("firstShiftStaffId", existing.firstShiftStaffId ?? defaults.firstShiftStaffId, { shouldDirty: false });
-    setValue("secondShiftStaffId", existing.secondShiftStaffId ?? defaults.secondShiftStaffId, { shouldDirty: false });
+    setValue("shift", shift, { shouldDirty: false });
+    setValue("shiftStaffId", existing.shiftStaffId ?? defaultShiftStaffId(selectableStaffUsers, new Date(existing.date), shift), { shouldDirty: false });
     setValue(
       "behaviorFrequencies",
       { ...emptyFrequencies(), ...parseBehaviorFrequencies(existing.behaviorFrequencies) },
@@ -165,11 +174,9 @@ export function CBHSEntryForm({
     );
   }
 
-  function resetDailyFields(date = selectedDate) {
-    const defaults = defaultShiftStaffIds(selectableStaffUsers, date);
-    setValue("servicePeriods", "7AM-9PM", { shouldDirty: false });
-    setValue("firstShiftStaffId", defaults.firstShiftStaffId, { shouldDirty: false });
-    setValue("secondShiftStaffId", defaults.secondShiftStaffId, { shouldDirty: false });
+  function resetDailyFields(date = selectedDate, shift = selectedShift) {
+    setValue("servicePeriods", defaultServicePeriods(shift), { shouldDirty: false });
+    setValue("shiftStaffId", defaultShiftStaffId(selectableStaffUsers, date, shift), { shouldDirty: false });
     setValue("behaviorFrequencies", emptyFrequencies(), { shouldDirty: false });
   }
 
@@ -183,11 +190,11 @@ export function CBHSEntryForm({
     if (!entry) {
       onChange(nextDate);
       startCheckingExisting(async () => {
-        const existing = await getLoggedEntryForDate(selectedClientId, nextDateValue);
+        const existing = await getLoggedEntryForDate(selectedClientId, nextDateValue, selectedShift);
         setDetectedEntry(existing);
 
         if (existing) {
-          setDuplicateWarning("A log is already entered for this date. The saved data has been populated, and submitting will update that log.");
+          setDuplicateWarning(`A ${selectedShift === "FIRST" ? "first" : "second"} shift log is already entered for this date. The saved data has been populated, and submitting will update that log.`);
           populateEntry(existing);
           return;
         }
@@ -203,8 +210,8 @@ export function CBHSEntryForm({
       setDetectedEntry(null);
       setDuplicateWarning("");
       setValue("servicePeriods", entry.servicePeriods, { shouldDirty: false });
-      setValue("firstShiftStaffId", entry.firstShiftStaffId ?? shiftDefaults.firstShiftStaffId, { shouldDirty: false });
-      setValue("secondShiftStaffId", entry.secondShiftStaffId ?? shiftDefaults.secondShiftStaffId, { shouldDirty: false });
+      setValue("shift", entry.shift ?? "FIRST", { shouldDirty: false });
+      setValue("shiftStaffId", entry.shiftStaffId ?? defaultShiftStaffId(selectableStaffUsers, entry.date, entry.shift ?? "FIRST"), { shouldDirty: false });
       setValue("behaviorFrequencies", behaviorFrequencies, { shouldDirty: false });
       return;
     }
@@ -214,13 +221,13 @@ export function CBHSEntryForm({
 
     onChange(nextDate);
     startCheckingExisting(async () => {
-      const existing = await getLoggedEntryForDate(selectedClientId, nextDateValue);
+      const existing = await getLoggedEntryForDate(selectedClientId, nextDateValue, selectedShift);
       const isSameEntry = existing?.id === entry.id;
       setDetectedEntry(existing && !isSameEntry ? existing : null);
 
       if (existing) {
         if (!isSameEntry) {
-          setDuplicateWarning("A log is already entered for the selected date. The saved data has been populated, and submitting will update that log.");
+          setDuplicateWarning(`A ${selectedShift === "FIRST" ? "first" : "second"} shift log is already entered for the selected date. The saved data has been populated, and submitting will update that log.`);
         } else {
           setDuplicateWarning("");
         }
@@ -229,8 +236,16 @@ export function CBHSEntryForm({
       }
 
       setDuplicateWarning("");
-      resetDailyFields(nextDate);
+      resetDailyFields(nextDate, selectedShift);
     });
+  }
+
+  function handleShiftChange(shift: "FIRST" | "SECOND", onChange: (value: "FIRST" | "SECOND") => void) {
+    onChange(shift);
+    setDetectedEntry(null);
+    setDuplicateWarning("");
+    setValue("servicePeriods", defaultServicePeriods(shift), { shouldDirty: false });
+    setValue("shiftStaffId", defaultShiftStaffId(selectableStaffUsers, selectedDate, shift), { shouldDirty: false });
   }
 
   async function onSubmit(values: FormValues) {
@@ -269,14 +284,26 @@ export function CBHSEntryForm({
 
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <Label htmlFor="firstShiftStaffId">First shift staff (6AM-6PM)</Label>
-          <Select id="firstShiftStaffId" {...register("firstShiftStaffId")}>
-            {selectableStaffUsers.map((staff) => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
-          </Select>
+          <Label htmlFor="shift">Shift</Label>
+          <Controller
+            control={control}
+            name="shift"
+            render={({ field }) => (
+              <Select
+                id="shift"
+                value={field.value}
+                onBlur={field.onBlur}
+                onChange={(event) => handleShiftChange(event.target.value as "FIRST" | "SECOND", field.onChange)}
+              >
+                <option value="FIRST">First shift (6AM-6PM)</option>
+                <option value="SECOND">Second shift (6PM-6AM)</option>
+              </Select>
+            )}
+          />
         </div>
         <div>
-          <Label htmlFor="secondShiftStaffId">Second shift staff (6PM-6AM)</Label>
-          <Select id="secondShiftStaffId" {...register("secondShiftStaffId")}>
+          <Label htmlFor="shiftStaffId">Staff</Label>
+          <Select id="shiftStaffId" {...register("shiftStaffId")}>
             {selectableStaffUsers.map((staff) => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
           </Select>
         </div>

@@ -34,12 +34,15 @@ function logsQuery(params: Record<string, string>) {
 
 function shiftStaffLabel(entry: {
   staff: { name: string };
+  shiftStaff: { name: string } | null;
   firstShiftStaff: { name: string } | null;
   secondShiftStaff: { name: string } | null;
 }) {
-  const first = entry.firstShiftStaff?.name ?? entry.staff.name;
-  const second = entry.secondShiftStaff?.name ?? entry.staff.name;
-  return `${first} / ${second}`;
+  return entry.shiftStaff?.name ?? entry.firstShiftStaff?.name ?? entry.secondShiftStaff?.name ?? entry.staff.name;
+}
+
+function shiftLabel(shift: "FIRST" | "SECOND") {
+  return shift === "FIRST" ? "First shift" : "Second shift";
 }
 
 export default async function LogsPage({
@@ -70,8 +73,8 @@ export default async function LogsPage({
     prisma.client.findMany({ orderBy: { name: "asc" } }),
     prisma.cBHSEntry.findMany({
       where,
-      include: { client: true, staff: true, firstShiftStaff: true, secondShiftStaff: true },
-      orderBy: { date: sort }
+      include: { client: true, staff: true, shiftStaff: true, firstShiftStaff: true, secondShiftStaff: true },
+      orderBy: [{ date: sort }, { shift: "asc" }]
     })
   ]);
 
@@ -128,7 +131,8 @@ export default async function LogsPage({
                 </Link>
               </th>
               <th className="p-3">Client</th>
-              <th className="p-3">Shift staff</th>
+              <th className="p-3">Shift</th>
+              <th className="p-3">Staff</th>
               <th className="p-3">Status</th>
               <th className="p-3">Actions</th>
             </tr>
@@ -138,6 +142,7 @@ export default async function LogsPage({
               <tr className="border-t transition-colors hover:bg-muted/50" key={entry.id}>
                 <td className="p-3">{entry.date.toLocaleDateString()}</td>
                 <td className="p-3 font-medium">{entry.client.name}</td>
+                <td className="p-3">{shiftLabel(entry.shift)}</td>
                 <td className="p-3">{shiftStaffLabel(entry)}</td>
                 <td className="p-3"><span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">Logged</span></td>
                 <td className="p-3">
@@ -155,7 +160,7 @@ export default async function LogsPage({
             ))}
             {!entries.length ? (
               <tr className="border-t">
-                <td className="p-6 text-center text-muted-foreground" colSpan={5}>No logs match the selected filters.</td>
+                <td className="p-6 text-center text-muted-foreground" colSpan={6}>No logs match the selected filters.</td>
               </tr>
             ) : null}
           </tbody>

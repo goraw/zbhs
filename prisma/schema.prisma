@@ -26,6 +26,11 @@ enum EntryStatus {
   SIGNED
 }
 
+enum ShiftPeriod {
+  FIRST
+  SECOND
+}
+
 model User {
   id                 String      @id @default(cuid())
   name               String
@@ -37,6 +42,7 @@ model User {
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
   entries            CBHSEntry[]    @relation("EntryStaff")
+  shiftEntries       CBHSEntry[]    @relation("ShiftStaff")
   firstShiftEntries  CBHSEntry[]    @relation("FirstShiftStaff")
   secondShiftEntries CBHSEntry[]    @relation("SecondShiftStaff")
   weeklySummaries    WeeklySummary[]
@@ -76,8 +82,10 @@ model CBHSEntry {
   id                 String          @id @default(cuid())
   clientId           String
   staffId            String
+  shiftStaffId       String?
   firstShiftStaffId  String?
   secondShiftStaffId String?
+  shift              ShiftPeriod    @default(FIRST)
   date               DateTime
   startTime          DateTime
   endTime            DateTime
@@ -95,14 +103,17 @@ model CBHSEntry {
   updatedAt          DateTime        @updatedAt
   client             Client          @relation(fields: [clientId], references: [id], onDelete: Restrict)
   staff              User            @relation("EntryStaff", fields: [staffId], references: [id], onDelete: Restrict)
+  shiftStaff         User?           @relation("ShiftStaff", fields: [shiftStaffId], references: [id], onDelete: Restrict)
   firstShiftStaff    User?           @relation("FirstShiftStaff", fields: [firstShiftStaffId], references: [id], onDelete: Restrict)
   secondShiftStaff   User?           @relation("SecondShiftStaff", fields: [secondShiftStaffId], references: [id], onDelete: Restrict)
   behaviors          EntryBehavior[]
 
   @@index([clientId])
   @@index([staffId])
+  @@index([shiftStaffId])
   @@index([firstShiftStaffId])
   @@index([secondShiftStaffId])
+  @@index([shift])
   @@index([status])
 }
 

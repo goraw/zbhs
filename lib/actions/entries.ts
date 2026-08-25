@@ -32,15 +32,16 @@ function staffInitials(name: string) {
     .slice(0, 3);
 }
 
-export async function getLoggedEntryForDate(clientId: string, dateValue: string) {
+export async function getLoggedEntryForDate(clientId: string, dateValue: string, shift: "FIRST" | "SECOND") {
   await requireUser();
-  if (!clientId || !dateValue) return null;
+  if (!clientId || !dateValue || !shift) return null;
 
   const date = new Date(`${dateValue}T00:00:00`);
   const { start, end } = dateRangeForDay(date);
   const entry = await prisma.cBHSEntry.findFirst({
     where: {
       clientId,
+      shift,
       date: { gte: start, lt: end }
     },
     orderBy: { updatedAt: "desc" },
@@ -48,8 +49,10 @@ export async function getLoggedEntryForDate(clientId: string, dateValue: string)
       id: true,
       clientId: true,
       date: true,
+      shift: true,
       servicePeriods: true,
       behaviorFrequencies: true,
+      shiftStaffId: true,
       firstShiftStaffId: true,
       secondShiftStaffId: true
     }
@@ -70,6 +73,8 @@ export async function createLoggedEntry(input: unknown) {
   const startTime = combineDateAndTime(data.date, "00:00");
   const endTime = combineDateAndTime(data.date, "00:01");
   const durationMinutes = 0;
+  const firstShiftStaffId = data.shift === "FIRST" ? data.shiftStaffId : null;
+  const secondShiftStaffId = data.shift === "SECOND" ? data.shiftStaffId : null;
 
   const entry = await prisma.$transaction(async (tx) => {
     const signatureText = staffInitials(user.name ?? "Staff");
@@ -77,8 +82,10 @@ export async function createLoggedEntry(input: unknown) {
       data: {
         clientId: data.clientId,
         staffId: user.id,
-        firstShiftStaffId: data.firstShiftStaffId,
-        secondShiftStaffId: data.secondShiftStaffId,
+        shift: data.shift,
+        shiftStaffId: data.shiftStaffId,
+        firstShiftStaffId,
+        secondShiftStaffId,
         date: data.date,
         startTime,
         endTime,
@@ -116,14 +123,18 @@ export async function updateLoggedEntry(entryId: string, input: unknown) {
   const startTime = combineDateAndTime(data.date, "00:00");
   const endTime = combineDateAndTime(data.date, "00:01");
   const signatureText = staffInitials(user.name ?? "Staff");
+  const firstShiftStaffId = data.shift === "FIRST" ? data.shiftStaffId : null;
+  const secondShiftStaffId = data.shift === "SECOND" ? data.shiftStaffId : null;
 
   await prisma.$transaction(async (tx) => {
     await tx.cBHSEntry.update({
       where: { id: entryId },
       data: {
         clientId: data.clientId,
-        firstShiftStaffId: data.firstShiftStaffId,
-        secondShiftStaffId: data.secondShiftStaffId,
+        shift: data.shift,
+        shiftStaffId: data.shiftStaffId,
+        firstShiftStaffId,
+        secondShiftStaffId,
         date: data.date,
         startTime,
         endTime,

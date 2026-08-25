@@ -6,6 +6,7 @@ import { cbhsStandardLines, parseBehaviorFrequencies } from "@/lib/cbhs-standard
 type SummaryWithRelations = WeeklySummary & { client: Client; staff: User };
 type EntryWithRelations = CBHSEntry & {
   staff: User;
+  shiftStaff: User | null;
   firstShiftStaff: User | null;
   secondShiftStaff: User | null;
 };
@@ -59,9 +60,7 @@ function frequencySummary(frequencies: Record<string, string>) {
 }
 
 function shiftInitials(entry: EntryWithRelations) {
-  const first = initials(entry.firstShiftStaff?.name ?? entry.staff.name);
-  const second = initials(entry.secondShiftStaff?.name ?? entry.staff.name);
-  return first === second ? first : `${first} / ${second}`;
+  return initials(entry.shiftStaff?.name ?? entry.firstShiftStaff?.name ?? entry.secondShiftStaff?.name ?? entry.staff.name);
 }
 
 export function WeeklyCBHSReport({

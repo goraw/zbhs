@@ -25,8 +25,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         date: { gte: summary.weekStart, lte: summary.weekEnd },
         status: "SIGNED"
       },
-      include: { staff: true, firstShiftStaff: true, secondShiftStaff: true },
-      orderBy: { date: "asc" }
+      include: { staff: true, shiftStaff: true, firstShiftStaff: true, secondShiftStaff: true },
+      orderBy: [{ date: "asc" }, { shift: "asc" }]
     });
 
   await audit("EXPORT_WEEKLY_PDF", {
