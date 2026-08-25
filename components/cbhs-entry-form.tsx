@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { CBHSEntry, Client, User } from "@prisma/client";
 import { Check, Loader2, X } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { createLoggedEntry, getLoggedEntryForDate, updateLoggedEntry } from "@/lib/actions/entries";
@@ -45,6 +45,16 @@ function findStaffId(staffUsers: StaffUser[], name: string) {
   return staffUsers.find((staff) => staff.name.trim().toLowerCase() === normalized)?.id;
 }
 
+function uniqueStaffOptions(staffUsers: StaffUser[]) {
+  const seen = new Set<string>();
+  return staffUsers.filter((staff) => {
+    const key = staff.name.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function defaultShiftStaffIds(staffUsers: StaffUser[], date: Date) {
   const dateValue = dateInputValue(date);
   const fallbackId = staffUsers[0]?.id ?? "";
@@ -84,6 +94,7 @@ export function CBHSEntryForm({
   staffUsers: StaffUser[];
   entry?: EntryForForm;
 }) {
+  const selectableStaffUsers = useMemo(() => uniqueStaffOptions(staffUsers), [staffUsers]);
   const [detectedEntry, setDetectedEntry] = useState<ExistingEntry>(null);
   const [duplicateWarning, setDuplicateWarning] = useState("");
   const [isCheckingExisting, startCheckingExisting] = useTransition();
@@ -91,7 +102,7 @@ export function CBHSEntryForm({
     ...emptyFrequencies(),
     ...parseBehaviorFrequencies(entry?.behaviorFrequencies)
   };
-  const shiftDefaults = defaultShiftStaffIds(staffUsers, entry?.date ?? new Date());
+  const shiftDefaults = defaultShiftStaffIds(selectableStaffUsers, entry?.date ?? new Date());
 
   const form = useForm<FormValues>({
     resolver: zodResolver(cbhsEntrySchema),
@@ -136,14 +147,14 @@ export function CBHSEntryForm({
       }
 
       setDuplicateWarning("");
-      const defaults = defaultShiftStaffIds(staffUsers, selectedDate);
+      const defaults = defaultShiftStaffIds(selectableStaffUsers, selectedDate);
       setValue("firstShiftStaffId", defaults.firstShiftStaffId, { shouldDirty: false });
       setValue("secondShiftStaffId", defaults.secondShiftStaffId, { shouldDirty: false });
     });
-  }, [entry, selectedClientId, selectedDate, setValue, staffUsers]);
+  }, [entry, selectedClientId, selectedDate, setValue, selectableStaffUsers]);
 
   function populateEntry(existing: NonNullable<ExistingEntry>) {
-    const defaults = defaultShiftStaffIds(staffUsers, new Date(existing.date));
+    const defaults = defaultShiftStaffIds(selectableStaffUsers, new Date(existing.date));
     setValue("servicePeriods", existing.servicePeriods, { shouldDirty: false });
     setValue("firstShiftStaffId", existing.firstShiftStaffId ?? defaults.firstShiftStaffId, { shouldDirty: false });
     setValue("secondShiftStaffId", existing.secondShiftStaffId ?? defaults.secondShiftStaffId, { shouldDirty: false });
@@ -155,7 +166,7 @@ export function CBHSEntryForm({
   }
 
   function resetDailyFields(date = selectedDate) {
-    const defaults = defaultShiftStaffIds(staffUsers, date);
+    const defaults = defaultShiftStaffIds(selectableStaffUsers, date);
     setValue("servicePeriods", "7AM-9PM", { shouldDirty: false });
     setValue("firstShiftStaffId", defaults.firstShiftStaffId, { shouldDirty: false });
     setValue("secondShiftStaffId", defaults.secondShiftStaffId, { shouldDirty: false });
@@ -260,13 +271,13 @@ export function CBHSEntryForm({
         <div>
           <Label htmlFor="firstShiftStaffId">First shift staff (6AM-6PM)</Label>
           <Select id="firstShiftStaffId" {...register("firstShiftStaffId")}>
-            {staffUsers.map((staff) => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
+            {selectableStaffUsers.map((staff) => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
           </Select>
         </div>
         <div>
           <Label htmlFor="secondShiftStaffId">Second shift staff (6PM-6AM)</Label>
           <Select id="secondShiftStaffId" {...register("secondShiftStaffId")}>
-            {staffUsers.map((staff) => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
+            {selectableStaffUsers.map((staff) => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
           </Select>
         </div>
       </div>

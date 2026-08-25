@@ -9,7 +9,7 @@ export default async function NewLogPage() {
   const [clients, staffUsers] = await Promise.all([
     prisma.client.findMany({ orderBy: { name: "asc" } }),
     prisma.user.findMany({
-      where: { isActive: true },
+      where: { isActive: true, role: "STAFF" },
       orderBy: { name: "asc" },
       select: { id: true, name: true }
     })

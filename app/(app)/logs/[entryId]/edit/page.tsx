@@ -11,7 +11,7 @@ export default async function EditLogPage({ params }: { params: Promise<{ entryI
     prisma.cBHSEntry.findUnique({ where: { id: entryId } }),
     prisma.client.findMany({ orderBy: { name: "asc" } }),
     prisma.user.findMany({
-      where: { isActive: true },
+      where: { isActive: true, role: "STAFF" },
       orderBy: { name: "asc" },
       select: { id: true, name: true }
     })
