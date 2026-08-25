@@ -9,25 +9,28 @@ type EntryWithRelations = CBHSEntry & {
 };
 
 const styles = StyleSheet.create({
-  page: { padding: 28, fontSize: 9, color: "#173036", fontFamily: "Helvetica" },
-  title: { fontSize: 16, fontWeight: 700, marginBottom: 3 },
-  subtitle: { fontSize: 9, color: "#506368" },
-  header: { borderBottom: "1px solid #92a9ad", paddingBottom: 8, marginBottom: 10 },
-  section: { marginTop: 10 },
-  sectionTitle: { fontSize: 11, fontWeight: 700, color: "#0f6974", marginBottom: 5 },
-  row: { flexDirection: "row", borderBottom: "1px solid #d8e3e5", minHeight: 20 },
-  cell: { padding: 4, borderRight: "1px solid #d8e3e5" },
+  page: { padding: 20, fontSize: 8, color: "#173036", fontFamily: "Helvetica" },
+  title: { fontSize: 14, fontWeight: 700, marginBottom: 2 },
+  subtitle: { fontSize: 8, color: "#506368" },
+  header: { borderBottom: "1px solid #92a9ad", paddingBottom: 5, marginBottom: 6 },
+  section: { marginTop: 6 },
+  sectionTitle: { fontSize: 10, fontWeight: 700, color: "#0f6974", marginBottom: 3 },
+  row: { flexDirection: "row", borderBottom: "1px solid #d8e3e5", minHeight: 18 },
+  cell: { padding: 3, borderRight: "1px solid #d8e3e5" },
   label: { fontWeight: 700 },
-  box: { border: "1px solid #d8e3e5", padding: 6, marginTop: 4 },
-  behavior: { marginBottom: 4 },
+  box: { border: "1px solid #d8e3e5", padding: 4, marginTop: 3 },
+  behavior: { marginBottom: 2 },
   dayHeader: { backgroundColor: "#edf4f4", fontWeight: 700 },
-  dateLine: { marginTop: 3, color: "#506368" },
-  frequencyRow: { flexDirection: "row", marginBottom: 4 },
+  dateLine: { marginTop: 2, color: "#506368" },
+  frequencyRow: { flexDirection: "row", marginBottom: 2 },
   frequencyItem: { flexDirection: "row", alignItems: "center", width: "25%" },
-  frequencyNumber: { width: 12, fontSize: 10 },
-  frequencyBox: { width: 52, height: 16, border: "1px solid #173036", backgroundColor: "#eef2ff", padding: 2 },
-  signature: { marginTop: 12, padding: 8, border: "1px solid #0f6974" },
-  footer: { position: "absolute", bottom: 16, left: 28, right: 28, fontSize: 8, color: "#607075", borderTop: "1px solid #d8e3e5", paddingTop: 4 }
+  frequencyNumber: { width: 10, fontSize: 8 },
+  frequencyBox: { width: 44, height: 13, border: "1px solid #173036", backgroundColor: "#eef2ff", padding: 1 },
+  summaryBox: { border: "1px solid #d8e3e5", padding: 5, minHeight: 40, lineHeight: 1.2 },
+  signature: { marginTop: 6, padding: 6, border: "1px solid #0f6974" },
+  signatureRow: { flexDirection: "row", gap: 14, marginTop: 10 },
+  signatureLine: { borderBottom: "1px solid #173036", height: 14 },
+  footer: { position: "absolute", bottom: 10, left: 20, right: 20, fontSize: 7, color: "#607075", borderTop: "1px solid #d8e3e5", paddingTop: 3 }
 });
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -77,7 +80,7 @@ export function WeeklyCBHSReport({
 }) {
   return (
     <Document title={`CBHS Weekly Report ${summary.client.clientId}`}>
-      <Page size="LETTER" style={styles.page}>
+      <Page size="LETTER" style={styles.page} wrap={false}>
         <View style={styles.header}>
           <Text style={styles.title}>CBHS Supportive Supervision Services Tracking Form</Text>
           <Text style={styles.subtitle}>Community Behavioral Health Supports weekly report</Text>
@@ -144,22 +147,25 @@ export function WeeklyCBHSReport({
           })}
         </View>
 
-        <Text style={styles.footer}>CBHS weekly report generated from signed daily logs and signed weekly attestation.</Text>
-      </Page>
-
-      <Page size="LETTER" style={styles.page}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Weekly Summary and Attestation</Text>
-          <Text style={styles.subtitle}>{summary.client.name} | {shortDate(summary.weekStart)} - {shortDate(summary.weekEnd)}</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>4. Weekly Summary</Text>
+          <Text style={styles.summaryBox}>{summary.narrative}</Text>
         </View>
-        <View style={styles.section}><Text style={styles.sectionTitle}>Weekly Summary</Text><Text style={styles.box}>{summary.narrative}</Text></View>
         <View style={styles.signature}>
           <Text>A representative of the organization attests to the accuracy of this weekly CBHS information.</Text>
-          <Text>Printed name: {summary.attestationName || summary.staff.name}</Text>
-          <Text>Signature: {summary.signatureText}</Text>
-          <Text>Date of signature: {summary.signatureTimestamp ? shortDate(summary.signatureTimestamp) : ""}</Text>
+          <View style={styles.signatureRow}>
+            <View style={{ width: "68%" }}>
+              <Text>Wet signature</Text>
+              <Text style={styles.signatureLine}> </Text>
+            </View>
+            <View style={{ width: "28%" }}>
+              <Text>Date</Text>
+              <Text style={styles.signatureLine}> </Text>
+            </View>
+          </View>
         </View>
-        <Text style={styles.footer}>HCA-style CBHS supportive supervision weekly packet.</Text>
+
+        <Text style={styles.footer}>CBHS weekly report generated from signed daily logs and prepared for wet-ink attestation.</Text>
       </Page>
     </Document>
   );
