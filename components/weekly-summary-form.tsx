@@ -28,8 +28,8 @@ function SubmitButtons({ simpleMode }: { simpleMode: boolean }) {
   );
 }
 
-export function WeeklySummaryForm({ clients, simpleMode = false }: { clients: Client[]; simpleMode?: boolean }) {
-  const [clientId, setClientId] = useState(clients[0]?.id ?? "");
+export function WeeklySummaryForm({ clients, simpleMode = false, defaultClientId }: { clients: Client[]; simpleMode?: boolean; defaultClientId?: string }) {
+  const [clientId, setClientId] = useState(defaultClientId ?? clients[0]?.id ?? "");
   const [weekStart, setWeekStart] = useState("");
   const [narrative, setNarrative] = useState("");
   const [message, setMessage] = useState("");

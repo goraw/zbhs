@@ -58,8 +58,14 @@ export default async function WeeklyPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = (await searchParams) ?? {};
-  const user = await requireUser();
-  const selectedClientId = searchParamValue(params.clientId);
+  const [user, clients] = await Promise.all([
+    requireUser(),
+    prisma.client.findMany({ orderBy: { name: "asc" } })
+  ]);
+  const requestedClientId = searchParamValue(params.clientId);
+  const michaelClient = clients.find((client) => client.name.trim().toLowerCase() === "michael brown");
+  const selectedClientId = requestedClientId || michaelClient?.id || "";
+  const tableClientId = selectedClientId === "all" ? "" : selectedClientId;
   const from = searchParamValue(params.from);
   const to = searchParamValue(params.to);
   const page = pageNumber(searchParamValue(params.page));
@@ -70,7 +76,7 @@ export default async function WeeklyPage({
   const toDate = dateBoundary(to, true);
   const where: Prisma.WeeklySummaryWhereInput = {};
 
-  if (selectedClientId) where.clientId = selectedClientId;
+  if (tableClientId) where.clientId = tableClientId;
   if (fromDate || toDate) {
     where.weekStart = {
       ...(fromDate ? { gte: fromDate } : {}),
@@ -78,10 +84,7 @@ export default async function WeeklyPage({
     };
   }
 
-  const [clients, summaryCount] = await Promise.all([
-    prisma.client.findMany({ orderBy: { name: "asc" } }),
-    prisma.weeklySummary.count({ where })
-  ]);
+  const summaryCount = await prisma.weeklySummary.count({ where });
   const totalPages = Math.max(1, Math.ceil(summaryCount / pageSize));
   const boundedPage = Math.min(page, totalPages);
   const summaries = await prisma.weeklySummary.findMany({
@@ -99,13 +102,13 @@ export default async function WeeklyPage({
         <p className="text-sm text-muted-foreground">Summarize daily support logs into a weekly supervision packet.</p>
       </div>
 
-      <WeeklySummaryForm clients={clients} simpleMode={user.name === "Fikiraddis Worku"} />
+      <WeeklySummaryForm clients={clients} simpleMode={user.name === "Fikiraddis Worku"} defaultClientId={tableClientId || michaelClient?.id} />
 
       <form action="/weekly" className="grid gap-4 rounded-md border bg-white/95 p-4 shadow-lg shadow-primary/5 md:grid-cols-[1.2fr_1fr_1fr_auto_auto] md:items-end">
         <div>
           <Label htmlFor="clientId">Client</Label>
           <Select id="clientId" name="clientId" defaultValue={selectedClientId}>
-            <option value="">All clients</option>
+            <option value="all">All clients</option>
             {clients.map((client) => (
               <option key={client.id} value={client.id}>{client.name}</option>
             ))}
@@ -143,6 +146,7 @@ export default async function WeeklyPage({
                   <WeekSortIcon className="h-4 w-4" />
                 </Link>
               </th>
+              <th className="p-3">Documented</th>
               <th className="p-3">Client</th>
               <th className="p-3">Staff Initials</th>
               <th className="p-3">Report</th>
@@ -152,6 +156,15 @@ export default async function WeeklyPage({
             {summaries.map((summary) => (
               <tr key={summary.id} className="border-t">
                 <td className="p-3">{summary.weekStart.toLocaleDateString()} - {summary.weekEnd.toLocaleDateString()}</td>
+                <td className="p-3">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(summary.narrative)}
+                    readOnly
+                    aria-label="Weekly summary documented"
+                    className="h-4 w-4 accent-primary"
+                  />
+                </td>
                 <td className="p-3 font-medium">{summary.client.name}</td>
                 <td className="p-3">{staffInitials(summary.staff.name)}</td>
                 <td className="p-3">
@@ -185,7 +198,7 @@ export default async function WeeklyPage({
             ))}
             {!summaries.length ? (
               <tr className="border-t">
-                <td className="p-6 text-center text-muted-foreground" colSpan={4}>No weekly summaries match the selected filters.</td>
+                <td className="p-6 text-center text-muted-foreground" colSpan={5}>No weekly summaries match the selected filters.</td>
               </tr>
             ) : null}
           </tbody>
