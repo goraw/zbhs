@@ -6,6 +6,10 @@ import { Label } from "@/components/ui/label";
 
 export const dynamic = "force-dynamic";
 
+function formatAmericanDate(date: Date) {
+  return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+}
+
 export default async function ClientsPage() {
   const clients = await prisma.client.findMany({ orderBy: { name: "asc" } });
 
@@ -47,7 +51,7 @@ export default async function ClientsPage() {
                 <td className="p-3 font-medium">{client.name}</td>
                 <td className="p-3">{client.clientId}</td>
                 <td className="p-3">{client.authorizationTier}</td>
-                <td className="p-3">{client.dob.toLocaleDateString()}</td>
+                <td className="p-3">{formatAmericanDate(client.dob)}</td>
               </tr>
             ))}
           </tbody>

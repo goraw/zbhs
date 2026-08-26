@@ -40,6 +40,10 @@ function dateInputValue(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+function formatAmericanDate(date: Date) {
+  return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+}
+
 function staffInitials(name: string) {
   return name
     .split(/\s+/)
@@ -157,7 +161,7 @@ export default async function WeeklyPage({
           <tbody>
             {summaries.map((summary) => (
               <tr key={summary.id} className="border-t">
-                <td className="p-3">{summary.weekStart.toLocaleDateString()} - {summary.weekEnd.toLocaleDateString()}</td>
+                <td className="p-3">{formatAmericanDate(summary.weekStart)} - {formatAmericanDate(summary.weekEnd)}</td>
                 <td className="p-3">
                   <WeeklyDocumentationCheckbox summaryId={summary.id} initialChecked={summary.isWetSignedPrinted} />
                 </td>

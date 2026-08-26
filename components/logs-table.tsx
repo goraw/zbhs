@@ -39,6 +39,10 @@ function shiftLabel(shift: "FIRST" | "SECOND" | "THIRD") {
   return "Third shift";
 }
 
+function formatAmericanDate(date: Date) {
+  return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+}
+
 export function LogsTable({
   entries,
   clients,
@@ -114,7 +118,7 @@ export function LogsTable({
             {entries.map((entry) => (
               <Fragment key={entry.id}>
                 <tr className="border-t transition-colors hover:bg-muted/50">
-                  <td className="p-3">{entry.date.toLocaleDateString()}</td>
+                  <td className="p-3">{formatAmericanDate(entry.date)}</td>
                   <td className="p-3 font-medium">{entry.client.name}</td>
                   <td className="p-3">{shiftLabel(entry.shift)}</td>
                   <td className="p-3">{shiftStaffLabel(entry)}</td>
