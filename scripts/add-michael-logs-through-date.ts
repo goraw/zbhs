@@ -98,7 +98,7 @@ async function main() {
           startTime: latest.startTime,
           endTime: latest.endTime,
           durationMinutes: latest.durationMinutes,
-          servicePeriods: "6:30AM-7:30AM, 12PM-1PM",
+          servicePeriods: "8AM-9AM, 12PM-1PM",
           behaviorFrequencies: JSON.stringify({ "5": "2" }),
           triggers: "",
           staffInterventions: "",

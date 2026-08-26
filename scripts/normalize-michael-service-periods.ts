@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-const firstShiftBasePeriods = ["6:30AM-7:30AM", "12PM-1PM"];
+const firstShiftBasePeriods = ["8AM-9AM", "12PM-1PM"];
 const secondShiftBasePeriods = ["6PM-7PM"];
 const occasionalFirstShiftPeriod = "3PM-4PM";
 const occasionalSecondShiftPeriod = "9PM-10PM";
