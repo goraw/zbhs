@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, Eye, Search, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, X } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { WeeklySummaryForm } from "@/components/weekly-summary-form";
@@ -30,6 +30,10 @@ function weeklyQuery(params: Record<string, string>) {
   }
   const value = query.toString();
   return value ? `/weekly?${value}` : "/weekly";
+}
+
+function dateInputValue(date: Date) {
+  return date.toISOString().slice(0, 10);
 }
 
 function pageNumber(value: string) {
@@ -139,8 +143,9 @@ export default async function WeeklyPage({
                 <td className="p-3 font-medium">{summary.client.name}</td>
                 <td className="p-3">{summary.staff.name}</td>
                 <td className="p-3">
-                  {summary.status === "SIGNED" ? (
-                    <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-3">
+                    {summary.status === "SIGNED" ? (
+                      <>
                       <Link className="inline-flex items-center gap-1 text-primary underline" href={`/api/reports/weekly/${summary.id}?preview=1`} target="_blank" rel="noopener noreferrer">
                         <Eye className="h-4 w-4" />
                         Preview
@@ -149,8 +154,13 @@ export default async function WeeklyPage({
                         <Download className="h-4 w-4" />
                         Download
                       </Link>
-                    </div>
-                  ) : "Sign first"}
+                      </>
+                    ) : <span className="text-muted-foreground">Sign first</span>}
+                    <Link className="inline-flex items-center gap-1 text-primary underline" href={`/logs?clientId=${summary.clientId}&from=${dateInputValue(summary.weekStart)}&to=${dateInputValue(summary.weekEnd)}`}>
+                      <Pencil className="h-4 w-4" />
+                      Edit
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}
