@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, Sparkles, Trash2, X } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
-import { deleteWeeklySummary } from "@/lib/actions/weekly-summaries";
+import { deleteWeeklySummary, regenerateWeeklySummary } from "@/lib/actions/weekly-summaries";
 import { WeeklySummaryForm } from "@/components/weekly-summary-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -180,6 +180,13 @@ export default async function WeeklyPage({
                       <Pencil className="h-4 w-4" />
                       Edit
                     </Link>
+                    <form action={regenerateWeeklySummary}>
+                      <input type="hidden" name="summaryId" value={summary.id} />
+                      <Button type="submit" size="sm" variant="secondary">
+                        <Sparkles className="h-4 w-4" />
+                        Auto generate
+                      </Button>
+                    </form>
                     <form action={deleteWeeklySummary}>
                       <input type="hidden" name="summaryId" value={summary.id} />
                       <Button type="submit" size="sm" variant="destructive">

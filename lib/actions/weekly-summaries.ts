@@ -166,3 +166,40 @@ export async function updateWeeklySummaryWetSignedPrinted(summaryId: string, isW
   revalidatePath("/weekly");
   return { ok: true };
 }
+
+export async function regenerateWeeklySummary(formData: FormData) {
+  const user = await requireUser();
+  const summaryId = String(formData.get("summaryId") ?? "");
+  if (!summaryId) throw new Error("Weekly summary is required.");
+
+  const summary = await prisma.weeklySummary.findUnique({
+    where: { id: summaryId },
+    include: { client: true }
+  });
+  if (!summary) throw new Error("Weekly summary not found.");
+
+  const entries = await prisma.cBHSEntry.findMany({
+    where: {
+      clientId: summary.clientId,
+      date: { gte: summary.weekStart, lte: summary.weekEnd }
+    },
+    select: { date: true, behaviorFrequencies: true },
+    orderBy: { date: "asc" }
+  });
+
+  const narrative = entries.length
+    ? generatedSummaryNarrative(summary.client.name, summary.weekStart, entries)
+    : `No daily support logs were recorded for ${summary.client.name} during ${shortDate(summary.weekStart)} - ${shortDate(summary.weekEnd)}.`;
+
+  await prisma.weeklySummary.update({
+    where: { id: summary.id },
+    data: { narrative }
+  });
+
+  await audit("REGENERATE_WEEKLY_SUMMARY", {
+    userId: user.id,
+    details: `Regenerated weekly summary ${summary.id} for ${summary.client.name} covering ${shortDate(summary.weekStart)} - ${shortDate(summary.weekEnd)}.`
+  });
+
+  revalidatePath("/weekly");
+}
