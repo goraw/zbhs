@@ -152,7 +152,7 @@ export function WeeklyCBHSReport({
             </View>
             <View style={{ width: "28%" }}>
               <Text>Date</Text>
-              <Text style={styles.signatureLine}> </Text>
+              <Text style={styles.signatureLine}>{shortDate(summary.weekEnd)}</Text>
             </View>
           </View>
         </View>
