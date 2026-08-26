@@ -32,7 +32,7 @@ function staffInitials(name: string) {
     .slice(0, 3);
 }
 
-export async function getLoggedEntryForDate(clientId: string, dateValue: string, shift: "FIRST" | "SECOND") {
+export async function getLoggedEntryForDate(clientId: string, dateValue: string, shift: "FIRST" | "SECOND" | "THIRD") {
   await requireUser();
   if (!clientId || !dateValue || !shift) return null;
 

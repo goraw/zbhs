@@ -29,6 +29,7 @@ enum EntryStatus {
 enum ShiftPeriod {
   FIRST
   SECOND
+  THIRD
 }
 
 model User {

@@ -30,18 +30,51 @@ function servicePeriodCount(value: string) {
     .filter(Boolean).length;
 }
 
+function timeToMinutes(value: string) {
+  const match = value.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if (!match) return null;
+  let hours = Number(match[1]);
+  const minutes = Number(match[2] ?? "0");
+  const meridiem = match[3].toUpperCase();
+  if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) return null;
+  if (hours === 12) hours = 0;
+  return (meridiem === "PM" ? hours + 12 : hours) * 60 + minutes;
+}
+
+function validServicePeriodOrder(value: string) {
+  return value
+    .split(/[\n,;]+/)
+    .map((period) => period.trim())
+    .filter(Boolean)
+    .every((period) => {
+      const [start, end] = period.split(/\s*-\s*/);
+      const startMinutes = start ? timeToMinutes(start) : null;
+      const endMinutes = end ? timeToMinutes(end) : null;
+      return startMinutes !== null && endMinutes !== null && endMinutes > startMinutes;
+    });
+}
+
 function behaviorFrequencyTotal(value: Record<string, string>) {
   return Object.values(value).reduce((total, frequency) => total + (frequency ? Number(frequency) : 0), 0);
 }
 
 export const cbhsEntrySchema = z.object({
   clientId: z.string().min(1),
-  shift: z.enum(["FIRST", "SECOND"]),
+  shift: z.enum(["FIRST", "SECOND", "THIRD"]),
   shiftStaffId: z.string().min(1),
   date: z.coerce.date(),
   servicePeriods: z.string().min(2).max(1000),
   behaviorFrequencies: z.record(z.string().regex(/^$|^(10|[1-9])$/, "Frequency must be blank or 1-10.")).default({})
 }).superRefine((value, context) => {
+  if (!validServicePeriodOrder(value.servicePeriods)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["servicePeriods"],
+      message: "Each service period must have an end time greater than the start time."
+    });
+    return;
+  }
+
   const periods = servicePeriodCount(value.servicePeriods);
   const frequencies = behaviorFrequencyTotal(value.behaviorFrequencies);
   if (periods !== frequencies) {

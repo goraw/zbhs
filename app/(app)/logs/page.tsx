@@ -41,8 +41,10 @@ function shiftStaffLabel(entry: {
   return entry.shiftStaff?.name ?? entry.firstShiftStaff?.name ?? entry.secondShiftStaff?.name ?? entry.staff.name;
 }
 
-function shiftLabel(shift: "FIRST" | "SECOND") {
-  return shift === "FIRST" ? "First shift" : "Second shift";
+function shiftLabel(shift: "FIRST" | "SECOND" | "THIRD") {
+  if (shift === "FIRST") return "First shift";
+  if (shift === "SECOND") return "Second shift";
+  return "Third shift";
 }
 
 export default async function LogsPage({

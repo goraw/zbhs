@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { CBHSEntry, Client, User } from "@prisma/client";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -13,12 +13,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 
 type FormValues = z.infer<typeof cbhsEntrySchema>;
 type EntryForForm = Pick<CBHSEntry, "id" | "clientId" | "date" | "servicePeriods" | "behaviorFrequencies" | "shift" | "shiftStaffId" | "firstShiftStaffId" | "secondShiftStaffId">;
 type ExistingEntry = Awaited<ReturnType<typeof getLoggedEntryForDate>>;
 type StaffUser = Pick<User, "id" | "name">;
+type Shift = "FIRST" | "SECOND" | "THIRD";
+type ServicePeriod = { from: string; to: string };
+
+const timeOptions = [
+  "6AM", "6:30AM", "7AM", "7:30AM", "8AM", "8:30AM", "9AM", "9:30AM", "10AM", "10:30AM", "11AM", "11:30AM",
+  "12PM", "12:30PM", "1PM", "1:30PM", "2PM", "2:30PM", "3PM", "3:30PM", "4PM", "4:30PM", "5PM", "5:30PM", "6PM", "6:30PM", "7PM"
+];
 
 function dateInputValue(date: Date) {
   const year = date.getFullYear();
@@ -29,6 +35,36 @@ function dateInputValue(date: Date) {
 
 function emptyFrequencies() {
   return Object.fromEntries(cbhsStandardLines.map((line) => [String(line.line), ""]));
+}
+
+function timeToMinutes(value: string) {
+  const match = value.match(/^(\d{1,2})(?::(\d{2}))?(AM|PM)$/);
+  if (!match) return 0;
+  let hours = Number(match[1]);
+  const minutes = Number(match[2] ?? "0");
+  if (hours === 12) hours = 0;
+  return (match[3] === "PM" ? hours + 12 : hours) * 60 + minutes;
+}
+
+function periodToText(period: ServicePeriod) {
+  return `${period.from}-${period.to}`;
+}
+
+function parseServicePeriods(value: string): ServicePeriod[] {
+  const parsed = value
+    .split(/[\n,;]+/)
+    .map((period) => period.trim())
+    .filter(Boolean)
+    .map((period) => {
+      const [from, to] = period.split(/\s*-\s*/);
+      return from && to ? { from, to } : null;
+    })
+    .filter((period): period is ServicePeriod => Boolean(period));
+  return parsed.length ? parsed : [{ from: "6:30AM", to: "7:30AM" }];
+}
+
+function serializeServicePeriods(periods: ServicePeriod[]) {
+  return periods.map(periodToText).join(", ");
 }
 
 function staffInitials(name: string) {
@@ -83,13 +119,23 @@ function defaultShiftStaffIds(staffUsers: StaffUser[], date: Date) {
   };
 }
 
-function defaultShiftStaffId(staffUsers: StaffUser[], date: Date, shift: "FIRST" | "SECOND") {
+function defaultShiftStaffId(staffUsers: StaffUser[], date: Date, shift: Shift) {
   const defaults = defaultShiftStaffIds(staffUsers, date);
-  return shift === "FIRST" ? defaults.firstShiftStaffId : defaults.secondShiftStaffId;
+  if (shift === "FIRST") return defaults.firstShiftStaffId;
+  if (shift === "SECOND") return defaults.secondShiftStaffId;
+  return findStaffId(staffUsers, "Kidist Wolemicheal") ?? defaults.secondShiftStaffId;
 }
 
-function defaultServicePeriods(shift: "FIRST" | "SECOND") {
-  return shift === "FIRST" ? "6:30AM-7:30AM, 12PM-1PM" : "6PM-7PM";
+function defaultServicePeriods(shift: Shift) {
+  if (shift === "FIRST") return "6:30AM-7:30AM, 12PM-1PM";
+  if (shift === "SECOND") return "2PM-3PM";
+  return "4PM-5PM";
+}
+
+function shiftName(shift: Shift) {
+  if (shift === "FIRST") return "first";
+  if (shift === "SECOND") return "second";
+  return "third";
 }
 
 export function CBHSEntryForm({
@@ -111,7 +157,7 @@ export function CBHSEntryForm({
     ...emptyFrequencies(),
     ...parseBehaviorFrequencies(entry?.behaviorFrequencies)
   };
-  const initialShift = entry?.shift ?? "FIRST";
+  const initialShift = (entry?.shift ?? "FIRST") as Shift;
   const initialDate = entry?.date ?? new Date();
 
   const form = useForm<FormValues>({
@@ -147,7 +193,7 @@ export function CBHSEntryForm({
 
       if (existing) {
         const shiftStaffId = existing.shiftStaffId ?? defaultShiftStaffId(selectableStaffUsers, new Date(existing.date), selectedShift);
-        setDuplicateWarning(`A ${selectedShift === "FIRST" ? "first" : "second"} shift log is already entered for this date. The saved data has been populated, and submitting will update that log.`);
+        setDuplicateWarning(`A ${shiftName(selectedShift)} shift log is already entered for this date. The saved data has been populated, and submitting will update that log.`);
         setValue("servicePeriods", existing.servicePeriods, { shouldDirty: false });
         setValue("shiftStaffId", shiftStaffId, { shouldDirty: false });
         setValue(
@@ -196,7 +242,7 @@ export function CBHSEntryForm({
         setDetectedEntry(existing);
 
         if (existing) {
-          setDuplicateWarning(`A ${selectedShift === "FIRST" ? "first" : "second"} shift log is already entered for this date. The saved data has been populated, and submitting will update that log.`);
+          setDuplicateWarning(`A ${shiftName(selectedShift)} shift log is already entered for this date. The saved data has been populated, and submitting will update that log.`);
           populateEntry(existing);
           return;
         }
@@ -212,8 +258,9 @@ export function CBHSEntryForm({
       setDetectedEntry(null);
       setDuplicateWarning("");
       setValue("servicePeriods", entry.servicePeriods, { shouldDirty: false });
-      setValue("shift", entry.shift ?? "FIRST", { shouldDirty: false });
-      setValue("shiftStaffId", entry.shiftStaffId ?? defaultShiftStaffId(selectableStaffUsers, entry.date, entry.shift ?? "FIRST"), { shouldDirty: false });
+      const entryShift = (entry.shift ?? "FIRST") as Shift;
+      setValue("shift", entryShift, { shouldDirty: false });
+      setValue("shiftStaffId", entry.shiftStaffId ?? defaultShiftStaffId(selectableStaffUsers, entry.date, entryShift), { shouldDirty: false });
       setValue("behaviorFrequencies", behaviorFrequencies, { shouldDirty: false });
       return;
     }
@@ -229,7 +276,7 @@ export function CBHSEntryForm({
 
       if (existing) {
         if (!isSameEntry) {
-          setDuplicateWarning(`A ${selectedShift === "FIRST" ? "first" : "second"} shift log is already entered for the selected date. The saved data has been populated, and submitting will update that log.`);
+          setDuplicateWarning(`A ${shiftName(selectedShift)} shift log is already entered for the selected date. The saved data has been populated, and submitting will update that log.`);
         } else {
           setDuplicateWarning("");
         }
@@ -242,12 +289,16 @@ export function CBHSEntryForm({
     });
   }
 
-  function handleShiftChange(shift: "FIRST" | "SECOND", onChange: (value: "FIRST" | "SECOND") => void) {
+  function handleShiftChange(shift: Shift, onChange: (value: Shift) => void) {
     onChange(shift);
     setDetectedEntry(null);
     setDuplicateWarning("");
     setValue("servicePeriods", defaultServicePeriods(shift), { shouldDirty: false });
     setValue("shiftStaffId", defaultShiftStaffId(selectableStaffUsers, selectedDate, shift), { shouldDirty: false });
+  }
+
+  function updateServicePeriods(periods: ServicePeriod[]) {
+    setValue("servicePeriods", serializeServicePeriods(periods), { shouldDirty: true, shouldValidate: true });
   }
 
   async function onSubmit(values: FormValues) {
@@ -295,10 +346,11 @@ export function CBHSEntryForm({
                 id="shift"
                 value={field.value}
                 onBlur={field.onBlur}
-                onChange={(event) => handleShiftChange(event.target.value as "FIRST" | "SECOND", field.onChange)}
+                onChange={(event) => handleShiftChange(event.target.value as Shift, field.onChange)}
               >
-                <option value="FIRST">First shift (6AM-6PM)</option>
-                <option value="SECOND">Second shift (6PM-6AM)</option>
+                <option value="FIRST">First shift (6AM-2PM)</option>
+                <option value="SECOND">Second shift (2PM-4PM)</option>
+                <option value="THIRD">Third shift (4PM-6PM)</option>
               </Select>
             )}
           />
@@ -340,7 +392,76 @@ export function CBHSEntryForm({
       <div className="grid gap-4 md:grid-cols-[1fr_1.5fr]">
         <div>
           <Label htmlFor="servicePeriods">Time: list each service period</Label>
-          <Textarea id="servicePeriods" {...register("servicePeriods")} placeholder="Example: 1PM-3PM, 5PM-7PM" />
+          <Controller
+            control={control}
+            name="servicePeriods"
+            render={({ field }) => {
+              const periods = parseServicePeriods(field.value);
+              return (
+                <div className="mt-1 grid gap-3 rounded-md border bg-white p-3">
+                  {periods.map((period, index) => (
+                    <div key={`${period.from}-${period.to}-${index}`} className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
+                      <div>
+                        <Label htmlFor={`period-from-${index}`} className="text-xs">From</Label>
+                        <Select
+                          id={`period-from-${index}`}
+                          value={period.from}
+                          onChange={(event) => {
+                            const next = periods.map((item, itemIndex) => itemIndex === index ? { ...item, from: event.target.value } : item);
+                            field.onChange(serializeServicePeriods(next));
+                          }}
+                        >
+                          {timeOptions.map((time) => <option key={time} value={time}>{time}</option>)}
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor={`period-to-${index}`} className="text-xs">To</Label>
+                        <Select
+                          id={`period-to-${index}`}
+                          value={period.to}
+                          onChange={(event) => {
+                            const next = periods.map((item, itemIndex) => itemIndex === index ? { ...item, to: event.target.value } : item);
+                            field.onChange(serializeServicePeriods(next));
+                          }}
+                        >
+                          {timeOptions.map((time) => <option key={time} value={time} disabled={timeToMinutes(time) <= timeToMinutes(period.from)}>{time}</option>)}
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        aria-label={`Remove service period ${index + 1}`}
+                        onClick={() => {
+                          const next = periods.filter((_, itemIndex) => itemIndex !== index);
+                          field.onChange(serializeServicePeriods(next.length ? next : [period]));
+                        }}
+                        disabled={periods.length === 1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-fit"
+                    onClick={() => {
+                      const last = periods[periods.length - 1] ?? { from: "6:30AM", to: "7:30AM" };
+                      const nextFrom = last.to;
+                      const nextTo = timeOptions.find((time) => timeToMinutes(time) > timeToMinutes(nextFrom)) ?? nextFrom;
+                      updateServicePeriods([...periods, { from: nextFrom, to: nextTo }]);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add period
+                  </Button>
+                  {formState.errors.servicePeriods?.message ? (
+                    <p className="text-sm text-destructive">{formState.errors.servicePeriods.message}</p>
+                  ) : null}
+                </div>
+              );
+            }}
+          />
         </div>
         <div>
           <Label>Daily behavior frequency and standard interventions</Label>

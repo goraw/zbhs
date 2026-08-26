@@ -1,0 +1,1 @@
+-- SQLite stores Prisma enums as text, so no table rewrite is needed for the THIRD shift value.
