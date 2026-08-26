@@ -23,7 +23,9 @@ type ServicePeriod = { from: string; to: string };
 
 const timeOptions = [
   "6AM", "6:30AM", "7AM", "7:30AM", "8AM", "8:30AM", "9AM", "9:30AM", "10AM", "10:30AM", "11AM", "11:30AM",
-  "12PM", "12:30PM", "1PM", "1:30PM", "2PM", "2:30PM", "3PM", "3:30PM", "4PM", "4:30PM", "5PM", "5:30PM", "6PM", "6:30PM", "7PM"
+  "12PM", "12:30PM", "1PM", "1:30PM", "2PM", "2:30PM", "3PM", "3:30PM", "4PM", "4:30PM", "5PM", "5:30PM", "6PM", "6:30PM", "7PM",
+  "7:30PM", "8PM", "8:30PM", "9PM", "9:30PM", "10PM", "10:30PM", "11PM", "11:30PM", "12AM", "12:30AM", "1AM", "1:30AM", "2AM",
+  "2:30AM", "3AM", "3:30AM", "4AM", "4:30AM", "5AM", "5:30AM"
 ];
 
 function dateInputValue(date: Date) {
@@ -44,6 +46,21 @@ function timeToMinutes(value: string) {
   const minutes = Number(match[2] ?? "0");
   if (hours === 12) hours = 0;
   return (match[3] === "PM" ? hours + 12 : hours) * 60 + minutes;
+}
+
+function shiftRelativeMinutes(value: string, shift: Shift) {
+  const minutes = timeToMinutes(value);
+  if (shift !== "THIRD") return minutes;
+  return minutes < 6 * 60 ? minutes + 24 * 60 : minutes;
+}
+
+function isEndOptionDisabled(from: string, to: string, shift: Shift) {
+  const start = shiftRelativeMinutes(from, shift);
+  const end = shiftRelativeMinutes(to, shift);
+  if (end <= start) return true;
+  if (shift === "FIRST") return start < 6 * 60 || end > 14 * 60;
+  if (shift === "SECOND") return start < 14 * 60 || end > 16 * 60;
+  return start < 22 * 60 || end > 30 * 60;
 }
 
 function periodToText(period: ServicePeriod) {
@@ -435,7 +452,7 @@ export function CBHSEntryForm({
                             field.onChange(serializeServicePeriods(next));
                           }}
                         >
-                          {timeOptions.map((time) => <option key={time} value={time} disabled={timeToMinutes(time) <= timeToMinutes(period.from)}>{time}</option>)}
+                          {timeOptions.map((time) => <option key={time} value={time} disabled={isEndOptionDisabled(period.from, time, selectedShift)}>{time}</option>)}
                         </Select>
                       </div>
                       <Button

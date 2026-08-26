@@ -54,6 +54,12 @@ function chooseKeptEntry(entries: EntryForCorrection[]) {
   return candidates[0];
 }
 
+function behaviorFivePeriodForShift(shift: EntryForCorrection["shift"], keepMidday: boolean) {
+  if (shift === "FIRST") return keepMidday ? "12PM-1PM" : "8AM-9AM";
+  if (shift === "SECOND") return "2PM-3PM";
+  return "10PM-11PM";
+}
+
 async function main() {
   const michael = await prisma.client.findFirst({
     where: { name: "Michael Brown" },
@@ -96,7 +102,7 @@ async function main() {
     // Keep a midday #5 record on a small, deterministic subset of dates to reflect sporadic midday-only documentation.
     const keepMidday = index % 5 === 2;
     const keptEntry = chooseKeptEntry(dailyEntries);
-    const keptPeriod = keepMidday ? "12PM-1PM" : "8AM-9AM";
+    const keptPeriod = behaviorFivePeriodForShift(keptEntry.shift, keepMidday);
 
     for (const entry of dailyEntries) {
       const frequencies = parseFrequencies(entry.behaviorFrequencies);

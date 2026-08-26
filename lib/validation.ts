@@ -23,6 +23,8 @@ export const behaviorSchema = z.object({
   severity: z.coerce.number().int().min(1).max(5)
 });
 
+type ShiftPeriodValue = "FIRST" | "SECOND" | "THIRD";
+
 function timeToMinutes(value: string) {
   const match = value.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
   if (!match) return null;
@@ -34,16 +36,37 @@ function timeToMinutes(value: string) {
   return (meridiem === "PM" ? hours + 12 : hours) * 60 + minutes;
 }
 
-function validServicePeriodOrder(value: string) {
+function periodParts(period: string) {
+  const [start, end] = period.split(/\s*-\s*/);
+  const startMinutes = start ? timeToMinutes(start) : null;
+  const endMinutes = end ? timeToMinutes(end) : null;
+  return { startMinutes, endMinutes };
+}
+
+function shiftRelativeMinutes(minutes: number, shift: ShiftPeriodValue) {
+  if (shift !== "THIRD") return minutes;
+  return minutes < 6 * 60 ? minutes + 24 * 60 : minutes;
+}
+
+function isInsideShift(startMinutes: number, endMinutes: number, shift: ShiftPeriodValue) {
+  const start = shiftRelativeMinutes(startMinutes, shift);
+  const end = shiftRelativeMinutes(endMinutes, shift);
+
+  if (end <= start) return false;
+  if (shift === "FIRST") return start >= 6 * 60 && end <= 14 * 60;
+  if (shift === "SECOND") return start >= 14 * 60 && end <= 16 * 60;
+  return start >= 22 * 60 && end <= 30 * 60;
+}
+
+function validServicePeriods(value: string, shift: ShiftPeriodValue) {
   return value
     .split(/[\n,;]+/)
     .map((period) => period.trim())
     .filter(Boolean)
     .every((period) => {
-      const [start, end] = period.split(/\s*-\s*/);
-      const startMinutes = start ? timeToMinutes(start) : null;
-      const endMinutes = end ? timeToMinutes(end) : null;
-      return startMinutes !== null && endMinutes !== null && endMinutes > startMinutes;
+      const { startMinutes, endMinutes } = periodParts(period);
+      if (startMinutes === null || endMinutes === null) return false;
+      return isInsideShift(startMinutes, endMinutes, shift);
     });
 }
 
@@ -55,11 +78,11 @@ export const cbhsEntrySchema = z.object({
   servicePeriods: z.string().min(2).max(1000),
   behaviorFrequencies: z.record(z.string().regex(/^$|^(10|[1-9])$/, "Frequency must be blank or 1-10.")).default({})
 }).superRefine((value, context) => {
-  if (!validServicePeriodOrder(value.servicePeriods)) {
+  if (!validServicePeriods(value.servicePeriods, value.shift)) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["servicePeriods"],
-      message: "Each service period must have an end time greater than the start time."
+      message: "Each service period must fit inside the selected shift."
     });
     return;
   }
