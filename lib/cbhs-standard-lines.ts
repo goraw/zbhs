@@ -11,7 +11,7 @@ export const cbhsStandardLines = [
   },
   {
     line: 3,
-    behavior: "Fecal Smearing / Inappropriate Toileting",
+    behavior: "Inappropriate Toileting",
     intervention: "1:1 hygiene assistance post-voiding, area clearance, active diversion tasks."
   },
   {
