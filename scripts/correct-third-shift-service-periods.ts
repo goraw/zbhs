@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-const thirdShiftServicePeriod = "4PM-5PM";
+const thirdShiftServicePeriod = "10PM-11PM";
 
 function dateKey(date: Date) {
   return date.toISOString().slice(0, 10);

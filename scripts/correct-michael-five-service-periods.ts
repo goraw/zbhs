@@ -13,7 +13,7 @@ function parseFrequencies(value: string) {
 }
 
 function servicePeriodsForFive(frequency: number, shift: ShiftPeriod) {
-  if (shift === "THIRD") return ["4PM-5PM"];
+  if (shift === "THIRD") return ["10PM-11PM"];
   if (frequency >= 3) return behaviorFivePeriods;
   if (frequency === 2) {
     return shift === "FIRST" ? behaviorFivePeriods.slice(0, 2) : behaviorFivePeriods.slice(1, 3);

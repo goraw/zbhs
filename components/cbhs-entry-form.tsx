@@ -132,7 +132,7 @@ function defaultShiftStaffId(staffUsers: StaffUser[], date: Date, shift: Shift) 
 function defaultServicePeriods(shift: Shift) {
   if (shift === "FIRST") return "6:30AM-7:30AM, 12PM-1PM";
   if (shift === "SECOND") return "2PM-3PM";
-  return "4PM-5PM";
+  return "10PM-11PM";
 }
 
 function shiftName(shift: Shift) {
@@ -361,7 +361,7 @@ export function CBHSEntryForm({
               >
                 <option value="FIRST">First shift (6AM-2PM)</option>
                 <option value="SECOND">Second shift (2PM-4PM)</option>
-                <option value="THIRD">Third shift (4PM-6PM)</option>
+                <option value="THIRD">Third shift (10PM-6AM)</option>
               </Select>
             )}
           />
