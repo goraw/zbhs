@@ -108,8 +108,8 @@ export function WeeklyCBHSReport({
           <View style={[styles.row, styles.dayHeader]}>
             <Text style={[styles.cell, { width: "24%" }]}>Day / Service Date</Text>
             <Text style={[styles.cell, { width: "18%" }]}>Time</Text>
-            <Text style={[styles.cell, { width: "48%" }]}>Frequency with behaviors and interventions</Text>
-            <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>Staff</Text>
+            <Text style={[styles.cell, { width: "46%" }]}>Frequency with behaviors and interventions</Text>
+            <Text style={[styles.cell, { width: "12%", borderRightWidth: 0 }]}>Staff Initials</Text>
           </View>
           {dayNames.map((dayName, dayIndex) => {
             const dayEntries = entries.filter((entry) => entry.date.getDay() === dayIndex);
@@ -122,16 +122,16 @@ export function WeeklyCBHSReport({
                     <View key={entry.id} style={styles.row}>
                       <Text style={[styles.cell, { width: "24%" }]}>{dayName}<Text style={styles.dateLine}>{"\n"}{shortDate(entry.date)}</Text></Text>
                       <Text style={[styles.cell, { width: "18%" }]}>{entry.servicePeriods}</Text>
-                      <Text style={[styles.cell, styles.frequencyText, { width: "48%" }]}>{frequencySummary(frequencies)}</Text>
-                      <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]}>{shiftInitials(entry)}</Text>
+                      <Text style={[styles.cell, styles.frequencyText, { width: "46%" }]}>{frequencySummary(frequencies)}</Text>
+                      <Text style={[styles.cell, { width: "12%", borderRightWidth: 0 }]}>{shiftInitials(entry)}</Text>
                     </View>
                   );
                 }) : (
                   <View style={styles.row}>
                     <Text style={[styles.cell, { width: "24%" }]}>{dayName}<Text style={styles.dateLine}>{"\n"}{shortDate(serviceDate)}</Text></Text>
                     <Text style={[styles.cell, { width: "18%" }]} />
-                    <Text style={[styles.cell, { width: "48%" }]} />
-                    <Text style={[styles.cell, { width: "10%", borderRightWidth: 0 }]} />
+                    <Text style={[styles.cell, { width: "46%" }]} />
+                    <Text style={[styles.cell, { width: "12%", borderRightWidth: 0 }]} />
                   </View>
                 )}
               </View>
