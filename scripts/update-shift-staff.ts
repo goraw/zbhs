@@ -2,10 +2,11 @@ import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
-type StaffKey = "fikiraddis" | "colletar" | "kidist" | "zillah";
+type StaffKey = "fikiraddis" | "abyot" | "colletar" | "kidist" | "zillah";
 
 const staffRoster: Record<StaffKey, { name: string; username: string }> = {
   fikiraddis: { name: "Fikiraddis Worku", username: "fikiraddis.worku" },
+  abyot: { name: "Abyot Seid", username: "abyot.seid" },
   colletar: { name: "COLLETAR CHISANU", username: "colletar.chisanu" },
   kidist: { name: "Kidist Wolemicheal", username: "kidist.wolemicheal" },
   zillah: { name: "Zillah Jombee", username: "zillah.jombee" }
@@ -24,16 +25,16 @@ function shiftAssignment(date: Date) {
   const isWednesday = date.getUTCDay() === 3;
 
   if (value >= "2024-12-23" && value <= "2025-01-10") {
-    return { first: "colletar" as const, second: "kidist" as const };
+    return { first: "kidist" as const, second: "colletar" as const };
   }
 
   if (value >= "2026-08-04" && value <= "2026-08-10") {
-    return { first: "zillah" as const, second: "kidist" as const };
+    return { first: "kidist" as const, second: "zillah" as const };
   }
 
   return {
     first: "fikiraddis" as const,
-    second: isWednesday ? "kidist" as const : value >= "2026-06-01" ? "zillah" as const : "colletar" as const
+    second: value >= "2026-05-01" ? "abyot" as const : isWednesday ? "colletar" as const : "kidist" as const
   };
 }
 

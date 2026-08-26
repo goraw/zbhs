@@ -95,27 +95,28 @@ function defaultShiftStaffIds(staffUsers: StaffUser[], date: Date) {
   const dateValue = dateInputValue(date);
   const fallbackId = staffUsers[0]?.id ?? "";
   const fikiraddisId = findStaffId(staffUsers, "Fikiraddis Worku");
+  const abyotId = findStaffId(staffUsers, "Abyot Seid");
   const colletarId = findStaffId(staffUsers, "COLLETAR CHISANU");
   const kidistId = findStaffId(staffUsers, "Kidist Wolemicheal");
   const zillahId = findStaffId(staffUsers, "Zillah Jombee");
 
   if (dateValue >= "2024-12-23" && dateValue <= "2025-01-10") {
     return {
-      firstShiftStaffId: colletarId ?? fallbackId,
-      secondShiftStaffId: kidistId ?? fallbackId
+      firstShiftStaffId: kidistId ?? fallbackId,
+      secondShiftStaffId: colletarId ?? fallbackId
     };
   }
 
   if (dateValue >= "2026-08-04" && dateValue <= "2026-08-10") {
     return {
-      firstShiftStaffId: zillahId ?? fallbackId,
-      secondShiftStaffId: kidistId ?? fallbackId
+      firstShiftStaffId: kidistId ?? fallbackId,
+      secondShiftStaffId: zillahId ?? fallbackId
     };
   }
 
   return {
     firstShiftStaffId: fikiraddisId ?? fallbackId,
-    secondShiftStaffId: date.getDay() === 3 ? kidistId ?? fallbackId : dateValue >= "2026-06-01" ? zillahId ?? fallbackId : colletarId ?? fallbackId
+    secondShiftStaffId: dateValue >= "2026-05-01" ? abyotId ?? fallbackId : date.getDay() === 3 ? colletarId ?? fallbackId : kidistId ?? fallbackId
   };
 }
 

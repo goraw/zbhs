@@ -29,16 +29,37 @@ function isWednesday(date: Date) {
   return date.getUTCDay() === 3;
 }
 
+function staffAssignment(date: Date) {
+  const value = dateKey(date);
+  const isWednesdayDate = isWednesday(date);
+
+  if (value >= "2024-12-23" && value <= "2025-01-10") {
+    return { first: "kidist" as const, second: "colletar" as const };
+  }
+
+  if (value >= "2026-08-04" && value <= "2026-08-10") {
+    return { first: "kidist" as const, second: "zillah" as const };
+  }
+
+  return {
+    first: "fikiraddis" as const,
+    second: value >= "2026-05-01" ? "abyot" as const : isWednesdayDate ? "colletar" as const : "kidist" as const
+  };
+}
+
 async function main() {
-  const [michael, fikiraddis, zillah, kidist] = await Promise.all([
+  const [michael, fikiraddis, abyot, zillah, kidist, colletar] = await Promise.all([
     prisma.client.findFirst({ where: { name: "Michael Brown" }, select: { id: true, name: true } }),
     prisma.user.findFirst({ where: { username: "fikiraddis.worku", isActive: true, role: "STAFF" }, select: { id: true, name: true } }),
+    prisma.user.findFirst({ where: { username: "abyot.seid", isActive: true, role: "STAFF" }, select: { id: true, name: true } }),
     prisma.user.findFirst({ where: { username: "zillah.jombee", isActive: true, role: "STAFF" }, select: { id: true, name: true } }),
-    prisma.user.findFirst({ where: { username: "kidist.wolemicheal", isActive: true, role: "STAFF" }, select: { id: true, name: true } })
+    prisma.user.findFirst({ where: { username: "kidist.wolemicheal", isActive: true, role: "STAFF" }, select: { id: true, name: true } }),
+    prisma.user.findFirst({ where: { username: "colletar.chisanu", isActive: true, role: "STAFF" }, select: { id: true, name: true } })
   ]);
 
   if (!michael) throw new Error("Michael Brown client record was not found.");
-  if (!fikiraddis || !zillah || !kidist) throw new Error("Required staff record was not found.");
+  if (!fikiraddis || !abyot || !zillah || !kidist || !colletar) throw new Error("Required staff record was not found.");
+  const staffByKey = { fikiraddis, abyot, zillah, kidist, colletar };
 
   const latest = await prisma.cBHSEntry.findFirst({
     where: { clientId: michael.id },
@@ -60,15 +81,18 @@ async function main() {
       select: { shift: true }
     });
     const shifts = new Set(existing.map((entry) => entry.shift));
+    const assignment = staffAssignment(cursor);
+    const firstStaff = staffByKey[assignment.first];
+    const secondStaff = staffByKey[assignment.second];
 
     if (!shifts.has("FIRST")) {
       await prisma.cBHSEntry.create({
         data: {
           clientId: michael.id,
-          staffId: fikiraddis.id,
+          staffId: firstStaff.id,
           shift: "FIRST",
-          shiftStaffId: fikiraddis.id,
-          firstShiftStaffId: fikiraddis.id,
+          shiftStaffId: firstStaff.id,
+          firstShiftStaffId: firstStaff.id,
           secondShiftStaffId: null,
           date: cursor,
           startTime: latest.startTime,
@@ -80,7 +104,7 @@ async function main() {
           staffInterventions: "",
           outcome: "",
           summativeNote: "",
-          signatureText: initials(fikiraddis.name),
+          signatureText: initials(firstStaff.name),
           signatureTimestamp: latest.signatureTimestamp ?? new Date(),
           status: latest.status
         }
@@ -90,7 +114,6 @@ async function main() {
       skippedExisting += 1;
     }
 
-    const secondStaff = isWednesday(cursor) ? kidist : zillah;
     if (!shifts.has("SECOND")) {
       await prisma.cBHSEntry.create({
         data: {
