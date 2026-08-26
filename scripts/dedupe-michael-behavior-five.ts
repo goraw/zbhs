@@ -56,7 +56,7 @@ function chooseKeptEntry(entries: EntryForCorrection[]) {
 
 function behaviorFivePeriodForShift(shift: EntryForCorrection["shift"], keepMidday: boolean) {
   if (shift === "FIRST") return keepMidday ? "12PM-1PM" : "8AM-9AM";
-  if (shift === "SECOND") return "2PM-3PM";
+  if (shift === "SECOND") return "6PM-7PM";
   return "10PM-11PM";
 }
 

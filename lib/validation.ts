@@ -54,7 +54,7 @@ function isInsideShift(startMinutes: number, endMinutes: number, shift: ShiftPer
 
   if (end <= start) return false;
   if (shift === "FIRST") return start >= 6 * 60 && end <= 14 * 60;
-  if (shift === "SECOND") return start >= 14 * 60 && end <= 16 * 60;
+  if (shift === "SECOND") return start >= 16 * 60 && end <= 22 * 60;
   return start >= 22 * 60 && end <= 30 * 60;
 }
 

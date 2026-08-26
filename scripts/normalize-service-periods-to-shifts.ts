@@ -65,7 +65,7 @@ function parseServicePeriods(value: string, shift: Shift) {
 function isInsideShift(period: ServicePeriod, shift: Shift) {
   if (period.endMinutes <= period.startMinutes) return false;
   if (shift === "FIRST") return period.startMinutes >= 6 * 60 && period.endMinutes <= 14 * 60;
-  if (shift === "SECOND") return period.startMinutes >= 14 * 60 && period.endMinutes <= 16 * 60;
+  if (shift === "SECOND") return period.startMinutes >= 16 * 60 && period.endMinutes <= 22 * 60;
   return period.startMinutes >= 22 * 60 && period.endMinutes <= 30 * 60;
 }
 
@@ -74,7 +74,7 @@ function defaultPeriod(entry: EntryForNormalization) {
   const hasFive = Number(frequencies["5"]) > 0;
 
   if (entry.shift === "FIRST") return hasFive ? "8AM-9AM" : "6:30AM-7:30AM";
-  if (entry.shift === "SECOND") return "2PM-3PM";
+  if (entry.shift === "SECOND") return "6PM-7PM";
   return "10PM-11PM";
 }
 
