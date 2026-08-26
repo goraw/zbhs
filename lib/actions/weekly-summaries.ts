@@ -181,3 +181,30 @@ export async function saveWeeklySummary(formData: FormData) {
   revalidatePath("/weekly");
   if (shouldOpenPdf && isSigning) redirect(`/api/reports/weekly/${summary.id}`);
 }
+
+export async function deleteWeeklySummary(formData: FormData) {
+  const user = await requireUser();
+  const summaryId = String(formData.get("summaryId") ?? "");
+  if (!summaryId) throw new Error("Weekly summary is required.");
+
+  const summary = await prisma.weeklySummary.findUnique({
+    where: { id: summaryId },
+    include: { client: true }
+  });
+  if (!summary) throw new Error("Weekly summary not found.");
+
+  const canDeleteAnyWeeklySummary = user.role === "SUPER_ADMIN" || user.name === "Fikiraddis Worku";
+  const canDeleteOwnDraft = summary.staffId === user.id && summary.status !== "SIGNED";
+  if (!canDeleteAnyWeeklySummary && !canDeleteOwnDraft) {
+    throw new Error("You do not have permission to delete this weekly summary.");
+  }
+
+  await prisma.weeklySummary.delete({ where: { id: summary.id } });
+
+  await audit("DELETE_WEEKLY_SUMMARY", {
+    userId: user.id,
+    details: `Deleted weekly summary ${summary.id} for ${summary.client.name} covering ${shortDate(summary.weekStart)} - ${shortDate(summary.weekEnd)}.`
+  });
+
+  revalidatePath("/weekly");
+}
