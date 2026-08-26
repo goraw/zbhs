@@ -37,11 +37,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const blob = await pdf(<WeeklyCBHSReport summary={summary} entries={entries} />).toBlob();
   const arrayBuffer = await blob.arrayBuffer();
+  const isPreview = request.nextUrl.searchParams.get("preview") === "1";
 
   return new NextResponse(arrayBuffer, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="cbhs-weekly-${summary.client.clientId}-${summary.weekStart.toISOString().slice(0, 10)}.pdf"`,
+      "Content-Disposition": `${isPreview ? "inline" : "attachment"}; filename="cbhs-weekly-${summary.client.clientId}-${summary.weekStart.toISOString().slice(0, 10)}.pdf"`,
       "Cache-Control": "no-store"
     }
   });

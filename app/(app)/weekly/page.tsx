@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUp, FileText, Lock, Search, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Download, Eye, Lock, Search, X } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { WeeklySummaryForm } from "@/components/weekly-summary-form";
@@ -119,7 +119,7 @@ export default async function WeeklyPage({
               <th className="p-3">Client</th>
               <th className="p-3">Staff</th>
               <th className="p-3">Status</th>
-              <th className="p-3">PDF</th>
+              <th className="p-3">Report</th>
             </tr>
           </thead>
           <tbody>
@@ -129,7 +129,20 @@ export default async function WeeklyPage({
                 <td className="p-3 font-medium">{summary.client.name}</td>
                 <td className="p-3">{summary.staff.name}</td>
                 <td className="p-3">{summary.status === "SIGNED" ? <span className="inline-flex items-center gap-1 text-primary"><Lock className="h-4 w-4" />Signed</span> : "Draft"}</td>
-                <td className="p-3">{summary.status === "SIGNED" ? <Link className="inline-flex items-center gap-1 text-primary underline" href={`/api/reports/weekly/${summary.id}`}><FileText className="h-4 w-4" />Weekly PDF</Link> : "Sign first"}</td>
+                <td className="p-3">
+                  {summary.status === "SIGNED" ? (
+                    <div className="flex flex-wrap gap-3">
+                      <Link className="inline-flex items-center gap-1 text-primary underline" href={`/api/reports/weekly/${summary.id}?preview=1`} target="_blank" rel="noopener noreferrer">
+                        <Eye className="h-4 w-4" />
+                        Preview
+                      </Link>
+                      <Link className="inline-flex items-center gap-1 text-primary underline" href={`/api/reports/weekly/${summary.id}`}>
+                        <Download className="h-4 w-4" />
+                        Download
+                      </Link>
+                    </div>
+                  ) : "Sign first"}
+                </td>
               </tr>
             ))}
             {!summaries.length ? (
