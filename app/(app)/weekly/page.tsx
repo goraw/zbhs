@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Download, Eye, Search, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, Eye, Search, X } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { WeeklySummaryForm } from "@/components/weekly-summary-form";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 
 export const dynamic = "force-dynamic";
+const pageSize = 20;
 
 function searchParamValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value ?? "";
@@ -31,6 +32,11 @@ function weeklyQuery(params: Record<string, string>) {
   return value ? `/weekly?${value}` : "/weekly";
 }
 
+function pageNumber(value: string) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+}
+
 export default async function WeeklyPage({
   searchParams
 }: {
@@ -40,6 +46,7 @@ export default async function WeeklyPage({
   const selectedClientId = searchParamValue(params.clientId);
   const from = searchParamValue(params.from);
   const to = searchParamValue(params.to);
+  const page = pageNumber(searchParamValue(params.page));
   const sort = searchParamValue(params.sort) === "asc" ? "asc" : "desc";
   const nextSort = sort === "asc" ? "desc" : "asc";
   const WeekSortIcon = sort === "asc" ? ArrowUp : ArrowDown;
@@ -55,15 +62,19 @@ export default async function WeeklyPage({
     };
   }
 
-  const [clients, summaries] = await Promise.all([
+  const [clients, summaryCount] = await Promise.all([
     prisma.client.findMany({ orderBy: { name: "asc" } }),
-    prisma.weeklySummary.findMany({
-      where,
-      include: { client: true, staff: true },
-      orderBy: { weekStart: sort },
-      take: 50
-    })
+    prisma.weeklySummary.count({ where })
   ]);
+  const totalPages = Math.max(1, Math.ceil(summaryCount / pageSize));
+  const boundedPage = Math.min(page, totalPages);
+  const summaries = await prisma.weeklySummary.findMany({
+    where,
+    include: { client: true, staff: true },
+    orderBy: [{ weekStart: sort }, { createdAt: "desc" }],
+    skip: (boundedPage - 1) * pageSize,
+    take: pageSize
+  });
 
   return (
     <section className="space-y-6">
@@ -109,7 +120,7 @@ export default async function WeeklyPage({
               <th className="p-3">
                 <Link
                   className="inline-flex items-center gap-2 rounded-md text-left font-semibold text-foreground transition-colors hover:text-primary"
-                  href={weeklyQuery({ clientId: selectedClientId, from, to, sort: nextSort })}
+                  href={weeklyQuery({ clientId: selectedClientId, from, to, sort: nextSort, page: "1" })}
                   aria-label={`Sort weekly summaries by week ${nextSort === "asc" ? "oldest first" : "newest first"}`}
                 >
                   Week
@@ -150,6 +161,25 @@ export default async function WeeklyPage({
             ) : null}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+        <p>Showing {summaries.length ? (boundedPage - 1) * pageSize + 1 : 0}-{Math.min(boundedPage * pageSize, summaryCount)} of {summaryCount} weekly summaries</p>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="secondary" size="sm" aria-disabled={boundedPage <= 1}>
+            <Link href={weeklyQuery({ clientId: selectedClientId, from, to, sort, page: String(Math.max(1, boundedPage - 1)) })}>
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Link>
+          </Button>
+          <span>Page {boundedPage} of {totalPages}</span>
+          <Button asChild variant="secondary" size="sm" aria-disabled={boundedPage >= totalPages}>
+            <Link href={weeklyQuery({ clientId: selectedClientId, from, to, sort, page: String(Math.min(totalPages, boundedPage + 1)) })}>
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </div>
     </section>
   );

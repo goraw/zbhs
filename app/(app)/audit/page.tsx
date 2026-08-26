@@ -1,12 +1,39 @@
+import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
+const pageSize = 50;
 
-export default async function AuditPage() {
+function searchParamValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value ?? "";
+}
+
+function pageNumber(value: string) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function auditQuery(page: number) {
+  return `/audit?page=${page}`;
+}
+
+export default async function AuditPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const page = pageNumber(searchParamValue(params.page));
+  const logCount = await prisma.auditLog.count();
+  const totalPages = Math.max(1, Math.ceil(logCount / pageSize));
+  const boundedPage = Math.min(page, totalPages);
   const logs = await prisma.auditLog.findMany({
     include: { user: true },
     orderBy: { timestamp: "desc" },
-    take: 200
+    skip: (boundedPage - 1) * pageSize,
+    take: pageSize
   });
 
   return (
@@ -32,6 +59,24 @@ export default async function AuditPage() {
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+        <p>Showing {logs.length ? (boundedPage - 1) * pageSize + 1 : 0}-{Math.min(boundedPage * pageSize, logCount)} of {logCount} audit events</p>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="secondary" size="sm" aria-disabled={boundedPage <= 1}>
+            <Link href={auditQuery(Math.max(1, boundedPage - 1))}>
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Link>
+          </Button>
+          <span>Page {boundedPage} of {totalPages}</span>
+          <Button asChild variant="secondary" size="sm" aria-disabled={boundedPage >= totalPages}>
+            <Link href={auditQuery(Math.min(totalPages, boundedPage + 1))}>
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </div>
     </section>
   );
