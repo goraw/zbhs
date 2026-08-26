@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { verifyUserPassword } from "@/lib/security";
 import { weeklySummarySchema } from "@/lib/validation";
-import { cbhsStandardLines, parseBehaviorFrequencies } from "@/lib/cbhs-standard-lines";
+import { generatedSummaryNarrative } from "@/lib/weekly-summary-generator";
 
 function normalizeWeekStart(date: Date) {
   const value = new Date(date);
@@ -26,67 +26,6 @@ function weekEndFromStart(weekStart: Date) {
 
 function shortDate(date: Date) {
   return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
-}
-
-function sentenceList(items: string[]) {
-  if (items.length <= 1) return items[0] ?? "";
-  if (items.length === 2) return `${items[0]} and ${items[1]}`;
-  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
-}
-
-function lowerFirst(value: string) {
-  return value ? `${value[0].toLowerCase()}${value.slice(1)}` : value;
-}
-
-function interventionPhrase(value: string) {
-  return lowerFirst(value.replace(/\.$/, ""));
-}
-
-function generatedSummaryNarrative(clientName: string, entries: Array<{ date: Date; behaviorFrequencies: string }>) {
-  const lineTotals = new Map<number, number>();
-  const documentedDays = new Set(entries.map((entry) => shortDate(entry.date)));
-
-  for (const entry of entries) {
-    const frequencies = parseBehaviorFrequencies(entry.behaviorFrequencies);
-    for (const [lineValue, frequencyValue] of Object.entries(frequencies)) {
-      const line = Number(lineValue);
-      const frequency = Number(frequencyValue);
-      if (!Number.isInteger(line) || !Number.isFinite(frequency) || frequency <= 0) continue;
-      lineTotals.set(line, (lineTotals.get(line) ?? 0) + frequency);
-    }
-  }
-
-  const observedLines = cbhsStandardLines
-    .map((line) => ({ ...line, total: lineTotals.get(line.line) ?? 0 }))
-    .filter((line) => line.total > 0)
-    .sort((left, right) => right.total - left.total || left.line - right.line);
-
-  if (!observedLines.length) {
-    return `${clientName} received supportive supervision across ${documentedDays.size} documented day${documentedDays.size === 1 ? "" : "s"} this week. Staff maintained routine monitoring and plan-based support; no behavior frequencies were recorded in the daily logs.`;
-  }
-
-  const dominant = observedLines[0];
-  const otherBehaviors = observedLines.slice(1, 4).map((line) => lowerFirst(line.behavior));
-  const mainInterventions = observedLines.slice(0, 3).map((line) => interventionPhrase(line.intervention));
-  const isMichaelFiveDominant = clientName.toLowerCase().includes("michael") && dominant.line === 5;
-
-  const sentences = [
-    `Staff focused on ${clientName}'s most common observed behavior, ${lowerFirst(dominant.behavior)}.`
-  ];
-
-  if (otherBehaviors.length) {
-    sentences.push(`Less frequent concerns included ${sentenceList(otherBehaviors)}.`);
-  }
-
-  sentences.push(`Support included ${sentenceList(mainInterventions)}.`);
-
-  if (isMichaelFiveDominant) {
-    sentences.push("Staff noted that giving Michael space after a calm prompt was often the most effective way to help him settle and avoid escalation.");
-  } else {
-    sentences.push("Staff continued routine monitoring, calm redirection, and care-plan-based support throughout the week.");
-  }
-
-  return sentences.join(" ");
 }
 
 export async function generateWeeklySummary(clientId: string, weekStartValue: string) {
@@ -115,7 +54,7 @@ export async function generateWeeklySummary(clientId: string, weekStartValue: st
     return `No daily support logs were recorded for ${client.name} during ${shortDate(weekStart)} - ${shortDate(weekEnd)}.`;
   }
 
-  return generatedSummaryNarrative(client.name, entries);
+  return generatedSummaryNarrative(client.name, weekStart, entries);
 }
 
 export async function saveWeeklySummary(formData: FormData) {
