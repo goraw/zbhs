@@ -6,7 +6,7 @@ import { Check, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { createLoggedEntry, getLoggedEntryForDate, updateLoggedEntry } from "@/lib/actions/entries";
+import { createLoggedEntry, getLoggedEntryForDate, updateLoggedEntry, updateLoggedEntryInline } from "@/lib/actions/entries";
 import { cbhsStandardLines, parseBehaviorFrequencies } from "@/lib/cbhs-standard-lines";
 import { cbhsEntrySchema } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
@@ -162,12 +162,18 @@ export function CBHSEntryForm({
   clients,
   staffName,
   staffUsers,
-  entry
+  entry,
+  inline = false,
+  onSaved,
+  onCancel
 }: {
   clients: Client[];
   staffName: string;
   staffUsers: StaffUser[];
   entry?: EntryForForm;
+  inline?: boolean;
+  onSaved?: () => void;
+  onCancel?: () => void;
 }) {
   const selectableStaffUsers = useMemo(() => uniqueStaffOptions(staffUsers), [staffUsers]);
   const [detectedEntry, setDetectedEntry] = useState<ExistingEntry>(null);
@@ -324,6 +330,11 @@ export function CBHSEntryForm({
 
   async function onSubmit(values: FormValues) {
     if (activeEntryId) {
+      if (inline) {
+        await updateLoggedEntryInline(activeEntryId, values);
+        onSaved?.();
+        return;
+      }
       await updateLoggedEntry(activeEntryId, values);
       return;
     }
@@ -331,7 +342,7 @@ export function CBHSEntryForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="mt-6 grid gap-5 rounded-md border bg-white/95 p-5 shadow-lg shadow-primary/5">
+    <form onSubmit={handleSubmit(onSubmit)} className={`${inline ? "mt-0" : "mt-6"} grid gap-5 rounded-md border bg-white/95 p-5 shadow-lg shadow-primary/5`}>
       <div className="grid gap-4 md:grid-cols-3">
         <div>
           <Label htmlFor="clientId">Client</Label>
@@ -520,10 +531,18 @@ export function CBHSEntryForm({
       </div>
 
       {Object.keys(formState.errors).length ? <p className="text-sm text-destructive">Please complete all required fields before logging.</p> : null}
-      <Button type="submit" className="w-fit" disabled={isBusy}>
-        {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-        {formState.isSubmitting ? (isUpdating ? "Updating..." : "Logging...") : isUpdating ? "Update" : "Log"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" className="w-fit" disabled={isBusy}>
+          {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          {formState.isSubmitting ? (isUpdating ? "Updating..." : "Logging...") : isUpdating ? "Update" : "Log"}
+        </Button>
+        {inline && onCancel ? (
+          <Button type="button" variant="secondary" className="w-fit" disabled={isBusy} onClick={onCancel}>
+            <X className="h-4 w-4" />
+            Cancel
+          </Button>
+        ) : null}
+      </div>
     </form>
   );
 }

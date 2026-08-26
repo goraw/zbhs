@@ -124,6 +124,16 @@ export async function createLoggedEntry(input: unknown) {
 }
 
 export async function updateLoggedEntry(entryId: string, input: unknown) {
+  await saveLoggedEntryUpdate(entryId, input);
+  redirect("/logs");
+}
+
+export async function updateLoggedEntryInline(entryId: string, input: unknown) {
+  await saveLoggedEntryUpdate(entryId, input);
+  return { ok: true };
+}
+
+async function saveLoggedEntryUpdate(entryId: string, input: unknown) {
   const user = await requireUser();
   const data = cbhsEntrySchema.parse(input);
 
@@ -171,7 +181,6 @@ export async function updateLoggedEntry(entryId: string, input: unknown) {
   });
 
   revalidatePath("/logs");
-  redirect("/logs");
 }
 
 export async function deleteLoggedEntry(formData: FormData) {

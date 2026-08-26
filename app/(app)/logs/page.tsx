@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Search, X, Pencil, Trash2 } from "lucide-react";
+import { Search, X } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { deleteLoggedEntry } from "@/lib/actions/entries";
+import { getCurrentUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { NavActionButton } from "@/components/nav-action-button";
+import { LogsTable } from "@/components/logs-table";
 
 export const dynamic = "force-dynamic";
 
@@ -23,30 +24,6 @@ function dateBoundary(value: string, endOfDay = false) {
   return date;
 }
 
-function logsQuery(params: Record<string, string>) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value) query.set(key, value);
-  }
-  const value = query.toString();
-  return value ? `/logs?${value}` : "/logs";
-}
-
-function shiftStaffLabel(entry: {
-  staff: { name: string };
-  shiftStaff: { name: string } | null;
-  firstShiftStaff: { name: string } | null;
-  secondShiftStaff: { name: string } | null;
-}) {
-  return entry.shiftStaff?.name ?? entry.firstShiftStaff?.name ?? entry.secondShiftStaff?.name ?? entry.staff.name;
-}
-
-function shiftLabel(shift: "FIRST" | "SECOND" | "THIRD") {
-  if (shift === "FIRST") return "First shift";
-  if (shift === "SECOND") return "Second shift";
-  return "Third shift";
-}
-
 export default async function LogsPage({
   searchParams
 }: {
@@ -58,8 +35,6 @@ export default async function LogsPage({
   const from = searchParamValue(params.from);
   const to = searchParamValue(params.to);
   const sort = searchParamValue(params.sort) === "asc" ? "asc" : "desc";
-  const nextSort = sort === "asc" ? "desc" : "asc";
-  const DateSortIcon = sort === "asc" ? ArrowUp : ArrowDown;
   const fromDate = dateBoundary(from);
   const toDate = dateBoundary(to, true);
   const where: Prisma.CBHSEntryWhereInput = {};
@@ -75,11 +50,45 @@ export default async function LogsPage({
     };
   }
 
-  const [clients, entries] = await Promise.all([
+  const [user, clients, staffUsers, entries] = await Promise.all([
+    getCurrentUser(),
     prisma.client.findMany({ orderBy: { name: "asc" } }),
+    prisma.user.findMany({
+      where: { isActive: true, role: "STAFF" },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true }
+    }),
     prisma.cBHSEntry.findMany({
       where,
-      include: { client: true, staff: true, shiftStaff: true, firstShiftStaff: true, secondShiftStaff: true },
+      select: {
+        id: true,
+        clientId: true,
+        staffId: true,
+        shiftStaffId: true,
+        firstShiftStaffId: true,
+        secondShiftStaffId: true,
+        shift: true,
+        date: true,
+        startTime: true,
+        endTime: true,
+        durationMinutes: true,
+        servicePeriods: true,
+        behaviorFrequencies: true,
+        triggers: true,
+        staffInterventions: true,
+        outcome: true,
+        summativeNote: true,
+        signatureText: true,
+        signatureTimestamp: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        client: true,
+        staff: { select: { name: true } },
+        shiftStaff: { select: { name: true } },
+        firstShiftStaff: { select: { name: true } },
+        secondShiftStaff: { select: { name: true } }
+      },
       orderBy: [{ date: sort }, { shift: "asc" }]
     })
   ]);
@@ -131,56 +140,17 @@ export default async function LogsPage({
         <input type="hidden" name="sort" value={sort} />
       </form>
 
-      <div className="overflow-hidden rounded-md border bg-white/95 shadow-lg shadow-primary/5">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-muted">
-            <tr>
-              <th className="p-3">
-                <Link
-                  className="inline-flex items-center gap-2 rounded-md text-left font-semibold text-foreground transition-colors hover:text-primary"
-                  href={logsQuery({ clientId: selectedClientId, shift: selectedShift, from, to, sort: nextSort })}
-                  aria-label={`Sort logs by date ${nextSort === "asc" ? "oldest first" : "newest first"}`}
-                >
-                  Date
-                  <DateSortIcon className="h-4 w-4" />
-                </Link>
-              </th>
-              <th className="p-3">Client</th>
-              <th className="p-3">Shift</th>
-              <th className="p-3">Staff</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry) => (
-              <tr className="border-t transition-colors hover:bg-muted/50" key={entry.id}>
-                <td className="p-3">{entry.date.toLocaleDateString()}</td>
-                <td className="p-3 font-medium">{entry.client.name}</td>
-                <td className="p-3">{shiftLabel(entry.shift)}</td>
-                <td className="p-3">{shiftStaffLabel(entry)}</td>
-                <td className="p-3"><span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">Logged</span></td>
-                <td className="p-3">
-                  <div className="flex flex-wrap gap-2">
-                    <Button asChild size="sm" variant="secondary">
-                      <Link href={`/logs/${entry.id}/edit`}><Pencil className="h-4 w-4" />Edit</Link>
-                    </Button>
-                    <form action={deleteLoggedEntry}>
-                      <input type="hidden" name="entryId" value={entry.id} />
-                      <Button type="submit" size="sm" variant="destructive"><Trash2 className="h-4 w-4" />Delete</Button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {!entries.length ? (
-              <tr className="border-t">
-                <td className="p-6 text-center text-muted-foreground" colSpan={6}>No logs match the selected filters.</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+      <LogsTable
+        entries={entries}
+        clients={clients}
+        staffUsers={staffUsers}
+        staffName={user?.name ?? ""}
+        selectedClientId={selectedClientId}
+        selectedShift={selectedShift}
+        from={from}
+        to={to}
+        sort={sort}
+      />
     </section>
   );
 }
