@@ -1,7 +1,7 @@
 "use client";
 
 import type { Client } from "@prisma/client";
-import { FilePenLine, Loader2, Lock, Sparkles } from "lucide-react";
+import { Download, FilePenLine, Loader2, Lock, Sparkles } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { generateWeeklySummary, saveWeeklySummary } from "@/lib/actions/weekly-summaries";
@@ -11,24 +11,24 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-function SubmitButtons() {
+function SubmitButtons({ simpleMode }: { simpleMode: boolean }) {
   const { pending } = useFormStatus();
 
   return (
     <div className="flex items-end gap-2">
       <Button type="submit" variant="secondary" name="intent" value="draft" disabled={pending}>
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePenLine className="h-4 w-4" />}
-        {pending ? "Saving..." : "Save draft"}
+        {pending ? "Saving..." : "Save summary"}
       </Button>
-      <Button type="submit" name="intent" value="sign" disabled={pending}>
-        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-        {pending ? "Signing..." : "Sign and PDF"}
+      <Button type="submit" name="intent" value={simpleMode ? "pdf" : "sign"} disabled={pending}>
+        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : simpleMode ? <Download className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+        {pending ? (simpleMode ? "Saving..." : "Signing...") : simpleMode ? "Save and PDF" : "Sign and PDF"}
       </Button>
     </div>
   );
 }
 
-export function WeeklySummaryForm({ clients }: { clients: Client[] }) {
+export function WeeklySummaryForm({ clients, simpleMode = false }: { clients: Client[]; simpleMode?: boolean }) {
   const [clientId, setClientId] = useState(clients[0]?.id ?? "");
   const [weekStart, setWeekStart] = useState("");
   const [narrative, setNarrative] = useState("");
@@ -82,19 +82,23 @@ export function WeeklySummaryForm({ clients }: { clients: Client[] }) {
         />
         {message ? <p className="mt-2 text-sm text-muted-foreground">{message}</p> : null}
       </div>
-      <div>
-        <Label htmlFor="attestationName">Printed attestation name</Label>
-        <Input id="attestationName" name="attestationName" />
-      </div>
-      <div>
-        <Label htmlFor="signatureText">Typed signature</Label>
-        <Input id="signatureText" name="signatureText" />
-      </div>
-      <div>
-        <Label htmlFor="password">Password to sign</Label>
-        <Input id="password" name="password" type="password" autoComplete="current-password" />
-      </div>
-      <SubmitButtons />
+      {simpleMode ? null : (
+        <>
+          <div>
+            <Label htmlFor="attestationName">Printed attestation name</Label>
+            <Input id="attestationName" name="attestationName" />
+          </div>
+          <div>
+            <Label htmlFor="signatureText">Typed signature</Label>
+            <Input id="signatureText" name="signatureText" />
+          </div>
+          <div>
+            <Label htmlFor="password">Password to sign</Label>
+            <Input id="password" name="password" type="password" autoComplete="current-password" />
+          </div>
+        </>
+      )}
+      <SubmitButtons simpleMode={simpleMode} />
     </form>
   );
 }

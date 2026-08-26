@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, X } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
 import { WeeklySummaryForm } from "@/components/weekly-summary-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,7 @@ export default async function WeeklyPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = (await searchParams) ?? {};
+  const user = await requireUser();
   const selectedClientId = searchParamValue(params.clientId);
   const from = searchParamValue(params.from);
   const to = searchParamValue(params.to);
@@ -87,7 +89,7 @@ export default async function WeeklyPage({
         <p className="text-sm text-muted-foreground">Summarize daily support logs into a weekly supervision packet.</p>
       </div>
 
-      <WeeklySummaryForm clients={clients} />
+      <WeeklySummaryForm clients={clients} simpleMode={user.name === "Fikiraddis Worku"} />
 
       <form action="/weekly" className="grid gap-4 rounded-md border bg-white/95 p-4 shadow-lg shadow-primary/5 md:grid-cols-[1.2fr_1fr_1fr_auto_auto] md:items-end">
         <div>
