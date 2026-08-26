@@ -38,6 +38,15 @@ function dateInputValue(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+function staffInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase())
+    .join("")
+    .slice(0, 3);
+}
+
 function pageNumber(value: string) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
@@ -135,7 +144,7 @@ export default async function WeeklyPage({
                 </Link>
               </th>
               <th className="p-3">Client</th>
-              <th className="p-3">Staff</th>
+              <th className="p-3">Staff Initials</th>
               <th className="p-3">Report</th>
             </tr>
           </thead>
@@ -144,7 +153,7 @@ export default async function WeeklyPage({
               <tr key={summary.id} className="border-t">
                 <td className="p-3">{summary.weekStart.toLocaleDateString()} - {summary.weekEnd.toLocaleDateString()}</td>
                 <td className="p-3 font-medium">{summary.client.name}</td>
-                <td className="p-3">{summary.staff.name}</td>
+                <td className="p-3">{staffInitials(summary.staff.name)}</td>
                 <td className="p-3">
                   <div className="flex flex-wrap gap-3">
                     {summary.status === "SIGNED" ? (
