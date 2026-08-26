@@ -167,9 +167,9 @@ export async function updateWeeklySummaryWetSignedPrinted(summaryId: string, isW
   return { ok: true };
 }
 
-export async function regenerateWeeklySummary(formData: FormData) {
+export async function regenerateWeeklySummary(input: FormData | string) {
   const user = await requireUser();
-  const summaryId = String(formData.get("summaryId") ?? "");
+  const summaryId = typeof input === "string" ? input : String(input.get("summaryId") ?? "");
   if (!summaryId) throw new Error("Weekly summary is required.");
 
   const summary = await prisma.weeklySummary.findUnique({
@@ -202,4 +202,5 @@ export async function regenerateWeeklySummary(formData: FormData) {
   });
 
   revalidatePath("/weekly");
+  return { ok: true };
 }
