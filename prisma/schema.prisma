@@ -140,6 +140,7 @@ model WeeklySummary {
   attestationName    String?
   signatureText      String?
   signatureTimestamp DateTime?
+  isWetSignedPrinted Boolean     @default(false)
   status             EntryStatus @default(DRAFT)
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt

@@ -147,3 +147,22 @@ export async function deleteWeeklySummary(formData: FormData) {
 
   revalidatePath("/weekly");
 }
+
+export async function updateWeeklySummaryWetSignedPrinted(summaryId: string, isWetSignedPrinted: boolean) {
+  const user = await requireUser();
+  if (!summaryId) throw new Error("Weekly summary is required.");
+
+  const summary = await prisma.weeklySummary.update({
+    where: { id: summaryId },
+    data: { isWetSignedPrinted },
+    include: { client: true }
+  });
+
+  await audit("UPDATE_WEEKLY_SUMMARY_PRINT_STATUS", {
+    userId: user.id,
+    details: `${isWetSignedPrinted ? "Marked" : "Unmarked"} weekly summary ${summary.id} for ${summary.client.name} as printed and wet-signed.`
+  });
+
+  revalidatePath("/weekly");
+  return { ok: true };
+}

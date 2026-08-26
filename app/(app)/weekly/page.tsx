@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { WeeklyDocumentationCheckbox } from "@/components/weekly-documentation-checkbox";
 
 export const dynamic = "force-dynamic";
 const pageSize = 20;
@@ -146,7 +147,7 @@ export default async function WeeklyPage({
                   <WeekSortIcon className="h-4 w-4" />
                 </Link>
               </th>
-              <th className="p-3">Documented</th>
+              <th className="p-3">Printed / wet-signed</th>
               <th className="p-3">Client</th>
               <th className="p-3">Staff Initials</th>
               <th className="p-3">Report</th>
@@ -157,13 +158,7 @@ export default async function WeeklyPage({
               <tr key={summary.id} className="border-t">
                 <td className="p-3">{summary.weekStart.toLocaleDateString()} - {summary.weekEnd.toLocaleDateString()}</td>
                 <td className="p-3">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(summary.narrative)}
-                    readOnly
-                    aria-label="Weekly summary documented"
-                    className="h-4 w-4 accent-primary"
-                  />
+                  <WeeklyDocumentationCheckbox summaryId={summary.id} initialChecked={summary.isWetSignedPrinted} />
                 </td>
                 <td className="p-3 font-medium">{summary.client.name}</td>
                 <td className="p-3">{staffInitials(summary.staff.name)}</td>
