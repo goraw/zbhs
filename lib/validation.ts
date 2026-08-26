@@ -23,13 +23,6 @@ export const behaviorSchema = z.object({
   severity: z.coerce.number().int().min(1).max(5)
 });
 
-function servicePeriodCount(value: string) {
-  return value
-    .split(/[\n,;]+/)
-    .map((period) => period.trim())
-    .filter(Boolean).length;
-}
-
 function timeToMinutes(value: string) {
   const match = value.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
   if (!match) return null;
@@ -54,10 +47,6 @@ function validServicePeriodOrder(value: string) {
     });
 }
 
-function behaviorFrequencyTotal(value: Record<string, string>) {
-  return Object.values(value).reduce((total, frequency) => total + (frequency ? Number(frequency) : 0), 0);
-}
-
 export const cbhsEntrySchema = z.object({
   clientId: z.string().min(1),
   shift: z.enum(["FIRST", "SECOND", "THIRD"]),
@@ -73,16 +62,6 @@ export const cbhsEntrySchema = z.object({
       message: "Each service period must have an end time greater than the start time."
     });
     return;
-  }
-
-  const periods = servicePeriodCount(value.servicePeriods);
-  const frequencies = behaviorFrequencyTotal(value.behaviorFrequencies);
-  if (periods !== frequencies) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["servicePeriods"],
-      message: "Service period count must match the total behavior frequency count."
-    });
   }
 });
 
