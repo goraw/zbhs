@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Download, Eye, Lock, Search, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Download, Eye, Search, X } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { WeeklySummaryForm } from "@/components/weekly-summary-form";
@@ -118,7 +118,6 @@ export default async function WeeklyPage({
               </th>
               <th className="p-3">Client</th>
               <th className="p-3">Staff</th>
-              <th className="p-3">Status</th>
               <th className="p-3">Report</th>
             </tr>
           </thead>
@@ -128,7 +127,6 @@ export default async function WeeklyPage({
                 <td className="p-3">{summary.weekStart.toLocaleDateString()} - {summary.weekEnd.toLocaleDateString()}</td>
                 <td className="p-3 font-medium">{summary.client.name}</td>
                 <td className="p-3">{summary.staff.name}</td>
-                <td className="p-3">{summary.status === "SIGNED" ? <span className="inline-flex items-center gap-1 text-primary"><Lock className="h-4 w-4" />Signed</span> : "Draft"}</td>
                 <td className="p-3">
                   {summary.status === "SIGNED" ? (
                     <div className="flex flex-wrap gap-3">
@@ -147,7 +145,7 @@ export default async function WeeklyPage({
             ))}
             {!summaries.length ? (
               <tr className="border-t">
-                <td className="p-6 text-center text-muted-foreground" colSpan={5}>No weekly summaries match the selected filters.</td>
+                <td className="p-6 text-center text-muted-foreground" colSpan={4}>No weekly summaries match the selected filters.</td>
               </tr>
             ) : null}
           </tbody>

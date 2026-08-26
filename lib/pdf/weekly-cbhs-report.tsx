@@ -12,7 +12,7 @@ type EntryWithRelations = CBHSEntry & {
 };
 
 const styles = StyleSheet.create({
-  page: { padding: 20, fontSize: 8, color: "#173036", fontFamily: "Helvetica" },
+  page: { paddingTop: 20, paddingRight: 20, paddingBottom: 20, paddingLeft: 44, fontSize: 8, color: "#173036", fontFamily: "Helvetica" },
   title: { fontSize: 14, fontWeight: 700, marginBottom: 2 },
   subtitle: { fontSize: 8, color: "#506368" },
   header: { borderBottom: "1px solid #92a9ad", paddingBottom: 5, marginBottom: 6 },
@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
   signature: { marginTop: 6, padding: 6, border: "1px solid #0f6974" },
   signatureRow: { flexDirection: "row", gap: 14, marginTop: 10 },
   signatureLine: { borderBottom: "1px solid #173036", height: 14 },
-  footer: { position: "absolute", bottom: 10, left: 20, right: 20, fontSize: 7, color: "#607075", borderTop: "1px solid #d8e3e5", paddingTop: 3 }
+  footer: { position: "absolute", bottom: 10, left: 44, right: 20, fontSize: 7, color: "#607075", borderTop: "1px solid #d8e3e5", paddingTop: 3 }
 });
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];

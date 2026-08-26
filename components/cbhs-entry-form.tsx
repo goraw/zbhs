@@ -182,6 +182,7 @@ export function CBHSEntryForm({
   const isBusy = formState.isSubmitting || isCheckingExisting;
   const selectedShiftStaffName = selectableStaffUsers.find((staff) => staff.id === selectedShiftStaffId)?.name ?? staffName;
   const displayedInitials = staffInitials(selectedShiftStaffName);
+  const selectedClientName = clients.find((client) => client.id === selectedClientId)?.name ?? "";
 
   useEffect(() => {
     if (entry || !selectedClientId || !selectedDate || !selectedShift) return;
@@ -314,7 +315,14 @@ export function CBHSEntryForm({
       <div className="grid gap-4 md:grid-cols-3">
         <div>
           <Label htmlFor="clientId">Client</Label>
-          <Select id="clientId" {...register("clientId")}>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</Select>
+          {entry ? (
+            <>
+              <Input id="clientId" value={selectedClientName} readOnly />
+              <input type="hidden" {...register("clientId")} />
+            </>
+          ) : (
+            <Select id="clientId" {...register("clientId")}>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</Select>
+          )}
         </div>
         <div>
           <Label htmlFor="date">Date</Label>
