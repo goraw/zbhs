@@ -29,7 +29,7 @@ function staffKeyForEntry(date: Date, shift: ShiftPeriod): StaffKey {
   const value = dateKey(date);
   const isWednesday = date.getUTCDay() === 3;
 
-  if (shift === "THIRD") return "kidist";
+  if (shift === "THIRD") return value >= "2026-05-01" ? "zillah" : "colletar";
 
   if (value >= "2024-12-23" && value <= "2025-01-10") {
     return shift === "FIRST" ? "kidist" : "colletar";
@@ -65,6 +65,7 @@ async function loadStaff() {
 async function main() {
   const staff = await loadStaff();
   const entries = await prisma.cBHSEntry.findMany({
+    where: { shift: "THIRD" },
     select: { id: true, date: true, shift: true, staffId: true, shiftStaffId: true, firstShiftStaffId: true, secondShiftStaffId: true, signatureText: true },
     orderBy: [{ date: "asc" }, { shift: "asc" }]
   });

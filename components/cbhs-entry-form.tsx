@@ -124,7 +124,9 @@ function defaultShiftStaffId(staffUsers: StaffUser[], date: Date, shift: Shift) 
   const defaults = defaultShiftStaffIds(staffUsers, date);
   if (shift === "FIRST") return defaults.firstShiftStaffId;
   if (shift === "SECOND") return defaults.secondShiftStaffId;
-  return findStaffId(staffUsers, "Kidist Wolemicheal") ?? defaults.secondShiftStaffId;
+  return dateInputValue(date) >= "2026-05-01"
+    ? findStaffId(staffUsers, "Zillah Jombee") ?? defaults.secondShiftStaffId
+    : findStaffId(staffUsers, "COLLETAR CHISANU") ?? defaults.secondShiftStaffId;
 }
 
 function defaultServicePeriods(shift: Shift) {

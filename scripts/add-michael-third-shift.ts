@@ -28,16 +28,20 @@ function thirdShiftDates(sortedDates: Date[]) {
 }
 
 async function main() {
-  const [michael, kidist] = await Promise.all([
+  const [michael, colletar, zillah] = await Promise.all([
     prisma.client.findFirst({ where: { name: "Michael Brown" }, select: { id: true, name: true } }),
     prisma.user.findFirst({
-      where: { username: "kidist.wolemicheal", isActive: true, role: "STAFF" },
+      where: { username: "colletar.chisanu", isActive: true, role: "STAFF" },
+      select: { id: true, name: true }
+    }),
+    prisma.user.findFirst({
+      where: { username: "zillah.jombee", isActive: true, role: "STAFF" },
       select: { id: true, name: true }
     })
   ]);
 
   if (!michael) throw new Error("Michael Brown client record was not found.");
-  if (!kidist) throw new Error("Kidist Wolemicheal staff record was not found.");
+  if (!colletar || !zillah) throw new Error("Required third-shift staff record was not found.");
 
   const existingEntries = await prisma.cBHSEntry.findMany({
     where: { clientId: michael.id },
@@ -72,12 +76,13 @@ async function main() {
     }
 
     const source = entries.find((entry) => entry.shift === "FIRST") ?? entries[0];
+    const thirdShiftStaff = key >= "2026-05-01" ? zillah : colletar;
     await prisma.cBHSEntry.create({
       data: {
         clientId: source.clientId,
-        staffId: kidist.id,
+        staffId: thirdShiftStaff.id,
         shift: "THIRD",
-        shiftStaffId: kidist.id,
+        shiftStaffId: thirdShiftStaff.id,
         firstShiftStaffId: null,
         secondShiftStaffId: null,
         date: source.date,
@@ -90,7 +95,7 @@ async function main() {
         staffInterventions: "",
         outcome: "",
         summativeNote: "",
-        signatureText: initials(kidist.name),
+        signatureText: initials(thirdShiftStaff.name),
         signatureTimestamp: source.signatureTimestamp ?? new Date(),
         status: source.status
       }
@@ -100,7 +105,7 @@ async function main() {
 
   console.log(JSON.stringify({
     client: michael.name,
-    thirdShiftStaff: kidist.name,
+    thirdShiftStaffRule: "COLLETAR CHISANU before 2026-05-01; Zillah Jombee from 2026-05-01 onward",
     createdThirdShift,
     existingThirdShift,
     skippedNoIssue
