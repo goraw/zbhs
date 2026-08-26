@@ -54,6 +54,7 @@ export default async function LogsPage({
 }) {
   const params = (await searchParams) ?? {};
   const selectedClientId = searchParamValue(params.clientId);
+  const selectedShift = searchParamValue(params.shift);
   const from = searchParamValue(params.from);
   const to = searchParamValue(params.to);
   const sort = searchParamValue(params.sort) === "asc" ? "asc" : "desc";
@@ -64,6 +65,9 @@ export default async function LogsPage({
   const where: Prisma.CBHSEntryWhereInput = {};
 
   if (selectedClientId) where.clientId = selectedClientId;
+  if (selectedShift === "FIRST" || selectedShift === "SECOND" || selectedShift === "THIRD") {
+    where.shift = selectedShift;
+  }
   if (fromDate || toDate) {
     where.date = {
       ...(fromDate ? { gte: fromDate } : {}),
@@ -90,7 +94,7 @@ export default async function LogsPage({
         <NavActionButton href="/logs/new" label="New log" pendingLabel="Opening log..." />
       </div>
 
-      <form action="/logs" className="grid gap-4 rounded-md border bg-white/95 p-4 shadow-lg shadow-primary/5 md:grid-cols-[1.2fr_1fr_1fr_auto_auto] md:items-end">
+      <form action="/logs" className="grid gap-4 rounded-md border bg-white/95 p-4 shadow-lg shadow-primary/5 md:grid-cols-[1.2fr_1fr_1fr_1fr_auto_auto] md:items-end">
         <div>
           <Label htmlFor="clientId">Client</Label>
           <Select id="clientId" name="clientId" defaultValue={selectedClientId}>
@@ -98,6 +102,15 @@ export default async function LogsPage({
             {clients.map((client) => (
               <option key={client.id} value={client.id}>{client.name}</option>
             ))}
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="shift">Shift</Label>
+          <Select id="shift" name="shift" defaultValue={selectedShift}>
+            <option value="">All shifts</option>
+            <option value="FIRST">First shift</option>
+            <option value="SECOND">Second shift</option>
+            <option value="THIRD">Third shift</option>
           </Select>
         </div>
         <div>
@@ -125,7 +138,7 @@ export default async function LogsPage({
               <th className="p-3">
                 <Link
                   className="inline-flex items-center gap-2 rounded-md text-left font-semibold text-foreground transition-colors hover:text-primary"
-                  href={logsQuery({ clientId: selectedClientId, from, to, sort: nextSort })}
+                  href={logsQuery({ clientId: selectedClientId, shift: selectedShift, from, to, sort: nextSort })}
                   aria-label={`Sort logs by date ${nextSort === "asc" ? "oldest first" : "newest first"}`}
                 >
                   Date
