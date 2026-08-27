@@ -6,7 +6,7 @@ import { Check, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { createLoggedEntry, getLoggedEntryForDate, updateLoggedEntry, updateLoggedEntryInline } from "@/lib/actions/entries";
+import { createLoggedEntry, createLoggedEntryInline, getLoggedEntryForDate, updateLoggedEntry, updateLoggedEntryInline } from "@/lib/actions/entries";
 import { cbhsStandardLines, parseBehaviorFrequencies } from "@/lib/cbhs-standard-lines";
 import { cbhsEntrySchema } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
@@ -163,6 +163,7 @@ export function CBHSEntryForm({
   staffName,
   staffUsers,
   entry,
+  duplicateFrom,
   inline = false,
   onSaved,
   onCancel
@@ -171,6 +172,7 @@ export function CBHSEntryForm({
   staffName: string;
   staffUsers: StaffUser[];
   entry?: EntryForForm;
+  duplicateFrom?: EntryForForm;
   inline?: boolean;
   onSaved?: () => void;
   onCancel?: () => void;
@@ -179,21 +181,23 @@ export function CBHSEntryForm({
   const [detectedEntry, setDetectedEntry] = useState<ExistingEntry>(null);
   const [duplicateWarning, setDuplicateWarning] = useState("");
   const [isCheckingExisting, startCheckingExisting] = useTransition();
+  const sourceEntry = entry ?? duplicateFrom;
+  const isDuplicate = Boolean(duplicateFrom && !entry);
   const behaviorFrequencies = {
     ...emptyFrequencies(),
-    ...parseBehaviorFrequencies(entry?.behaviorFrequencies)
+    ...parseBehaviorFrequencies(sourceEntry?.behaviorFrequencies)
   };
-  const initialShift = (entry?.shift ?? "FIRST") as Shift;
-  const initialDate = entry?.date ?? new Date();
+  const initialShift = (sourceEntry?.shift ?? "FIRST") as Shift;
+  const initialDate = sourceEntry?.date ?? new Date();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(cbhsEntrySchema),
     defaultValues: {
-      clientId: entry?.clientId ?? clients[0]?.id ?? "",
+      clientId: sourceEntry?.clientId ?? clients[0]?.id ?? "",
       shift: initialShift,
-      shiftStaffId: entry?.shiftStaffId ?? defaultShiftStaffId(selectableStaffUsers, initialDate, initialShift),
+      shiftStaffId: sourceEntry?.shiftStaffId ?? defaultShiftStaffId(selectableStaffUsers, initialDate, initialShift),
       date: initialDate,
-      servicePeriods: entry?.servicePeriods ?? defaultServicePeriods(initialShift),
+      servicePeriods: sourceEntry?.servicePeriods ?? defaultServicePeriods(initialShift),
       behaviorFrequencies
     }
   });
@@ -211,7 +215,7 @@ export function CBHSEntryForm({
   const selectedClientName = clients.find((client) => client.id === selectedClientId)?.name ?? "";
 
   useEffect(() => {
-    if (entry || !selectedClientId || !selectedDate || !selectedShift) return;
+    if (entry || duplicateFrom || !selectedClientId || !selectedDate || !selectedShift) return;
 
     const dateValue = dateInputValue(selectedDate);
     startCheckingExisting(async () => {
@@ -235,7 +239,7 @@ export function CBHSEntryForm({
       setValue("shiftStaffId", defaultShiftStaffId(selectableStaffUsers, selectedDate, selectedShift), { shouldDirty: false });
       setValue("servicePeriods", defaultServicePeriods(selectedShift), { shouldDirty: false });
     });
-  }, [entry, selectedClientId, selectedDate, selectedShift, setValue, selectableStaffUsers]);
+  }, [entry, duplicateFrom, selectedClientId, selectedDate, selectedShift, setValue, selectableStaffUsers]);
 
   function populateEntry(existing: NonNullable<ExistingEntry>) {
     const shift = existing.shift ?? selectedShift;
@@ -261,6 +265,13 @@ export function CBHSEntryForm({
     const nextDate = new Date(`${dateValue}T00:00:00`);
     const nextDateValue = dateInputValue(nextDate);
     const originalDateValue = entry ? dateInputValue(entry.date) : "";
+
+    if (isDuplicate) {
+      onChange(nextDate);
+      setDetectedEntry(null);
+      setDuplicateWarning("");
+      return;
+    }
 
     if (!entry) {
       onChange(nextDate);
@@ -338,15 +349,32 @@ export function CBHSEntryForm({
       await updateLoggedEntry(activeEntryId, values);
       return;
     }
+    if (inline) {
+      await createLoggedEntryInline(values);
+      onSaved?.();
+      return;
+    }
     await createLoggedEntry(values);
   }
+
+  const submitText = formState.isSubmitting
+    ? isUpdating
+      ? "Updating..."
+      : isDuplicate
+        ? "Creating duplicate..."
+        : "Logging..."
+    : isUpdating
+      ? "Update"
+      : isDuplicate
+        ? "Create duplicate"
+        : "Log";
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className={`${inline ? "mt-0" : "mt-6"} grid gap-5 rounded-md border bg-white/95 p-5 shadow-lg shadow-primary/5`}>
       <div className="grid gap-4 md:grid-cols-3">
         <div>
           <Label htmlFor="clientId">Client</Label>
-          {entry ? (
+          {sourceEntry ? (
             <>
               <Input id="clientId" value={selectedClientName} readOnly />
               <input type="hidden" {...register("clientId")} />
@@ -401,6 +429,12 @@ export function CBHSEntryForm({
           </Select>
         </div>
       </div>
+
+      {isDuplicate ? (
+        <div className="rounded-md border border-primary/30 bg-primary/10 p-3 text-sm text-foreground shadow-sm">
+          This is a copied log. Saving will create a new log and will not change the original.
+        </div>
+      ) : null}
 
       {duplicateWarning ? (
         <div className="flex items-start justify-between gap-3 rounded-md border border-secondary/60 bg-secondary/15 p-3 text-sm text-foreground shadow-sm">
@@ -534,7 +568,7 @@ export function CBHSEntryForm({
       <div className="flex flex-wrap gap-2">
         <Button type="submit" className="w-fit" disabled={isBusy}>
           {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-          {formState.isSubmitting ? (isUpdating ? "Updating..." : "Logging...") : isUpdating ? "Update" : "Log"}
+          {submitText}
         </Button>
         {inline && onCancel ? (
           <Button type="button" variant="secondary" className="w-fit" disabled={isBusy} onClick={onCancel}>

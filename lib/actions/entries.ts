@@ -67,6 +67,16 @@ export async function getLoggedEntryForDate(clientId: string, dateValue: string,
 }
 
 export async function createLoggedEntry(input: unknown) {
+  await saveLoggedEntryCreate(input);
+  redirect("/logs");
+}
+
+export async function createLoggedEntryInline(input: unknown) {
+  await saveLoggedEntryCreate(input);
+  return { ok: true };
+}
+
+async function saveLoggedEntryCreate(input: unknown) {
   const user = await requireUser();
   const data = cbhsEntrySchema.parse(input);
 
@@ -76,7 +86,7 @@ export async function createLoggedEntry(input: unknown) {
   const firstShiftStaffId = data.shift === "FIRST" ? data.shiftStaffId : null;
   const secondShiftStaffId = data.shift === "SECOND" ? data.shiftStaffId : null;
 
-  const entry = await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx) => {
     const shiftStaff = await tx.user.findUnique({
       where: { id: data.shiftStaffId },
       select: { name: true, isActive: true, role: true }
@@ -117,10 +127,9 @@ export async function createLoggedEntry(input: unknown) {
       }
     });
 
-    return created;
   });
 
-  redirect("/logs");
+  revalidatePath("/logs");
 }
 
 export async function updateLoggedEntry(entryId: string, input: unknown) {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { CBHSEntry, Client, User } from "@prisma/client";
-import { ArrowDown, ArrowUp, Pencil, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, Pencil, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Fragment, useMemo, useState } from "react";
 import { deleteLoggedEntry } from "@/lib/actions/entries";
@@ -18,6 +18,11 @@ type LogEntry = EntryForForm & {
   shiftStaff: Pick<User, "name"> | null;
   firstShiftStaff: Pick<User, "name"> | null;
   secondShiftStaff: Pick<User, "name"> | null;
+};
+
+type OpenEditor = {
+  entryId: string;
+  mode: "edit" | "duplicate";
 };
 
 function logsQuery(params: Record<string, string>) {
@@ -65,15 +70,20 @@ export function LogsTable({
   sort: "asc" | "desc";
 }) {
   const router = useRouter();
-  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [openEditor, setOpenEditor] = useState<OpenEditor | null>(null);
   const [notice, setNotice] = useState("");
   const nextSort = sort === "asc" ? "desc" : "asc";
   const DateSortIcon = sort === "asc" ? ArrowUp : ArrowDown;
-  const editingEntry = useMemo(() => entries.find((entry) => entry.id === editingEntryId), [editingEntryId, entries]);
+  const activeEntry = useMemo(() => entries.find((entry) => entry.id === openEditor?.entryId), [openEditor, entries]);
 
-  function handleSaved(entry: LogEntry) {
-    setEditingEntryId(null);
-    setNotice(`${entry.client.name}'s ${shiftLabel(entry.shift).toLowerCase()} log was updated.`);
+  function toggleEditor(entryId: string, mode: OpenEditor["mode"]) {
+    setNotice("");
+    setOpenEditor((current) => current?.entryId === entryId && current.mode === mode ? null : { entryId, mode });
+  }
+
+  function handleSaved(entry: LogEntry, mode: OpenEditor["mode"]) {
+    setOpenEditor(null);
+    setNotice(`${entry.client.name}'s ${shiftLabel(entry.shift).toLowerCase()} log was ${mode === "duplicate" ? "duplicated" : "updated"}.`);
     router.refresh();
   }
 
@@ -128,15 +138,22 @@ export function LogsTable({
                       <Button
                         type="button"
                         size="sm"
-                        variant={editingEntryId === entry.id ? "default" : "secondary"}
-                        onClick={() => {
-                          setNotice("");
-                          setEditingEntryId((current) => current === entry.id ? null : entry.id);
-                        }}
-                        aria-expanded={editingEntryId === entry.id}
+                        variant={openEditor?.entryId === entry.id && openEditor.mode === "edit" ? "default" : "secondary"}
+                        onClick={() => toggleEditor(entry.id, "edit")}
+                        aria-expanded={openEditor?.entryId === entry.id && openEditor.mode === "edit"}
                       >
                         <Pencil className="h-4 w-4" />
-                        {editingEntryId === entry.id ? "Close" : "Edit"}
+                        {openEditor?.entryId === entry.id && openEditor.mode === "edit" ? "Close" : "Edit"}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={openEditor?.entryId === entry.id && openEditor.mode === "duplicate" ? "default" : "secondary"}
+                        onClick={() => toggleEditor(entry.id, "duplicate")}
+                        aria-expanded={openEditor?.entryId === entry.id && openEditor.mode === "duplicate"}
+                      >
+                        <Copy className="h-4 w-4" />
+                        {openEditor?.entryId === entry.id && openEditor.mode === "duplicate" ? "Close" : "Duplicate"}
                       </Button>
                       <form action={deleteLoggedEntry}>
                         <input type="hidden" name="entryId" value={entry.id} />
@@ -145,7 +162,7 @@ export function LogsTable({
                     </div>
                   </td>
                 </tr>
-                {editingEntry?.id === entry.id ? (
+                {activeEntry?.id === entry.id ? (
                   <tr className="border-t bg-muted/30">
                     <td colSpan={6} className="p-4">
                       <CBHSEntryForm
@@ -153,9 +170,10 @@ export function LogsTable({
                         clients={clients}
                         staffName={staffName}
                         staffUsers={staffUsers}
-                        entry={entry}
-                        onSaved={() => handleSaved(entry)}
-                        onCancel={() => setEditingEntryId(null)}
+                        entry={openEditor?.mode === "edit" ? entry : undefined}
+                        duplicateFrom={openEditor?.mode === "duplicate" ? entry : undefined}
+                        onSaved={() => handleSaved(entry, openEditor?.mode ?? "edit")}
+                        onCancel={() => setOpenEditor(null)}
                       />
                     </td>
                   </tr>
