@@ -54,13 +54,37 @@ function shiftRelativeMinutes(value: string, shift: Shift) {
   return minutes < 6 * 60 ? minutes + 24 * 60 : minutes;
 }
 
+function shiftBounds(shift: Shift) {
+  if (shift === "FIRST") return { start: 6 * 60, end: 14 * 60 };
+  if (shift === "SECOND") return { start: 16 * 60, end: 22 * 60 };
+  return { start: 22 * 60, end: 30 * 60 };
+}
+
+function isStartOptionDisabled(from: string, shift: Shift) {
+  const start = shiftRelativeMinutes(from, shift);
+  const bounds = shiftBounds(shift);
+  return start < bounds.start || start >= bounds.end;
+}
+
 function isEndOptionDisabled(from: string, to: string, shift: Shift) {
   const start = shiftRelativeMinutes(from, shift);
   const end = shiftRelativeMinutes(to, shift);
+  const bounds = shiftBounds(shift);
   if (end <= start) return true;
-  if (shift === "FIRST") return start < 6 * 60 || end > 14 * 60;
-  if (shift === "SECOND") return start < 16 * 60 || end > 22 * 60;
-  return start < 22 * 60 || end > 30 * 60;
+  return start < bounds.start || end > bounds.end;
+}
+
+function isPeriodInsideShift(period: ServicePeriod, shift: Shift) {
+  return !isStartOptionDisabled(period.from, shift) && !isEndOptionDisabled(period.from, period.to, shift);
+}
+
+function normalizePeriodForShift(period: ServicePeriod, shift: Shift) {
+  if (isPeriodInsideShift(period, shift)) return period;
+  return parseServicePeriods(defaultServicePeriods(shift))[0];
+}
+
+function nextValidEnd(from: string, shift: Shift) {
+  return timeOptions.find((time) => !isEndOptionDisabled(from, time, shift)) ?? normalizePeriodForShift({ from, to: from }, shift).to;
 }
 
 function periodToText(period: ServicePeriod) {
@@ -202,17 +226,27 @@ export function CBHSEntryForm({
     }
   });
 
-  const { control, register, handleSubmit, formState, setValue } = form;
+  const { control, register, handleSubmit, formState, setValue, clearErrors } = form;
   const selectedClientId = useWatch({ control, name: "clientId" });
   const selectedDate = useWatch({ control, name: "date" });
   const selectedShift = useWatch({ control, name: "shift" });
   const selectedShiftStaffId = useWatch({ control, name: "shiftStaffId" });
+  const selectedServicePeriods = useWatch({ control, name: "servicePeriods" });
   const activeEntryId = detectedEntry?.id ?? entry?.id;
   const isUpdating = Boolean(activeEntryId);
   const isBusy = formState.isSubmitting || isCheckingExisting;
   const selectedShiftStaffName = selectableStaffUsers.find((staff) => staff.id === selectedShiftStaffId)?.name ?? staffName;
   const displayedInitials = staffInitials(selectedShiftStaffName);
   const selectedClientName = clients.find((client) => client.id === selectedClientId)?.name ?? "";
+
+  useEffect(() => {
+    if (!selectedShift || !selectedServicePeriods) return;
+    const periods = parseServicePeriods(selectedServicePeriods);
+    if (periods.every((period) => isPeriodInsideShift(period, selectedShift))) return;
+
+    setValue("servicePeriods", defaultServicePeriods(selectedShift), { shouldDirty: true, shouldValidate: true });
+    clearErrors("servicePeriods");
+  }, [clearErrors, selectedServicePeriods, selectedShift, setValue]);
 
   useEffect(() => {
     if (entry || duplicateFrom || !selectedClientId || !selectedDate || !selectedShift) return;
@@ -331,8 +365,9 @@ export function CBHSEntryForm({
     onChange(shift);
     setDetectedEntry(null);
     setDuplicateWarning("");
-    setValue("servicePeriods", defaultServicePeriods(shift), { shouldDirty: false });
+    setValue("servicePeriods", defaultServicePeriods(shift), { shouldDirty: true, shouldValidate: true });
     setValue("shiftStaffId", defaultShiftStaffId(selectableStaffUsers, selectedDate, shift), { shouldDirty: false });
+    clearErrors("servicePeriods");
   }
 
   function updateServicePeriods(periods: ServicePeriod[]) {
@@ -480,11 +515,14 @@ export function CBHSEntryForm({
                           id={`period-from-${index}`}
                           value={period.from}
                           onChange={(event) => {
-                            const next = periods.map((item, itemIndex) => itemIndex === index ? { ...item, from: event.target.value } : item);
+                            const from = event.target.value;
+                            const next = periods.map((item, itemIndex) => itemIndex === index
+                              ? { from, to: isEndOptionDisabled(from, item.to, selectedShift) ? nextValidEnd(from, selectedShift) : item.to }
+                              : item);
                             field.onChange(serializeServicePeriods(next));
                           }}
                         >
-                          {timeOptions.map((time) => <option key={time} value={time}>{time}</option>)}
+                          {timeOptions.map((time) => <option key={time} value={time} disabled={isStartOptionDisabled(time, selectedShift)}>{time}</option>)}
                         </Select>
                       </div>
                       <div>
@@ -520,8 +558,9 @@ export function CBHSEntryForm({
                     className="w-fit"
                     onClick={() => {
                       const last = periods[periods.length - 1] ?? { from: "6:30AM", to: "7:30AM" };
-                      const nextFrom = last.to;
-                      const nextTo = timeOptions.find((time) => timeToMinutes(time) > timeToMinutes(nextFrom)) ?? nextFrom;
+                      const normalizedLast = normalizePeriodForShift(last, selectedShift);
+                      const nextFrom = isStartOptionDisabled(normalizedLast.to, selectedShift) ? normalizedLast.from : normalizedLast.to;
+                      const nextTo = nextValidEnd(nextFrom, selectedShift);
                       updateServicePeriods([...periods, { from: nextFrom, to: nextTo }]);
                     }}
                   >
