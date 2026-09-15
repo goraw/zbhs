@@ -4,7 +4,7 @@ import { cbhsStandardLines, parseBehaviorFrequencies } from "@/lib/cbhs-standard
 
 const providerOneId = "101663574WA";
 const startDate = "2025-11-16";
-const endDate = "2026-09-14";
+const endDate = "2026-09-15";
 
 function midnight(value: string) {
   return new Date(`${value}T00:00:00.000Z`);
@@ -59,12 +59,13 @@ function staffAssignment(date: Date) {
   };
 }
 
-function behaviorForDate(date: Date) {
+function behaviorForDate(date: Date, shift: "FIRST" | "SECOND") {
   const day = date.getUTCDay();
   const weekIndex = Math.floor((date.getTime() - midnight(startDate).getTime()) / (7 * 24 * 60 * 60 * 1000));
   const dayOfMonth = date.getUTCDate();
 
-  if (dayOfMonth === 10 || dayOfMonth === 24) return { line: "2", frequency: "1" };
+  if (dayOfMonth === 10 && shift === "FIRST") return { line: "2", frequency: "1" };
+  if (dayOfMonth === 24 && shift === "SECOND" && hasSecondShiftLog(date)) return { line: "2", frequency: "1" };
   if (day === 0 || day === 3 || day === 5) return { line: "4", frequency: day === 5 ? "2" : "1" };
   if (day === 2 || day === 4) return { line: "6", frequency: day === 4 ? "2" : "1" };
   if (day === 1) return { line: weekIndex % 3 === 0 ? "1" : "3", frequency: "1" };
@@ -72,7 +73,7 @@ function behaviorForDate(date: Date) {
 }
 
 function firstShiftFrequencies(date: Date) {
-  const behavior = behaviorForDate(date);
+  const behavior = behaviorForDate(date, "FIRST");
   return { [behavior.line]: behavior.frequency };
 }
 
@@ -82,8 +83,24 @@ function hasSecondShiftLog(date: Date) {
 }
 
 function secondShiftFrequencies(date: Date) {
-  const behavior = behaviorForDate(date);
+  const behavior = behaviorForDate(date, "SECOND");
   return { [behavior.line]: behavior.line === "2" ? "1" : "1" };
+}
+
+function frequencyTotal(frequencies: Record<string, string>) {
+  return Object.values(frequencies).reduce((total, value) => total + Number(value || 0), 0);
+}
+
+function servicePeriodsForFrequencies(frequencies: Record<string, string>, shift: "FIRST" | "SECOND") {
+  const count = Math.max(1, frequencyTotal(frequencies));
+  const options = shift === "FIRST"
+    ? ["8AM-9AM", "12PM-1PM", "1PM-2PM"]
+    : ["6PM-7PM", "8PM-9PM"];
+  return options.slice(0, Math.min(count, options.length)).join(", ");
+}
+
+function servicePeriodCount(value: string) {
+  return value.split(/[\n,;]+/).map((period) => period.trim()).filter(Boolean).length;
 }
 
 function sentenceList(items: string[]) {
@@ -216,6 +233,8 @@ async function main() {
   for (let cursor = start; cursor <= end; cursor = addDays(cursor, 1)) {
     const assignment = staffAssignment(cursor);
     const firstStaff = staffByKey[assignment.first];
+    const firstFrequencies = firstShiftFrequencies(cursor);
+    const firstServicePeriods = servicePeriodsForFrequencies(firstFrequencies, "FIRST");
 
     await prisma.cBHSEntry.create({
       data: {
@@ -228,9 +247,9 @@ async function main() {
         date: cursor,
         startTime: cursor,
         endTime: cursor,
-        durationMinutes: 180,
-        servicePeriods: "8AM-9AM, 12PM-1PM, 1PM-2PM",
-        behaviorFrequencies: JSON.stringify(firstShiftFrequencies(cursor)),
+        durationMinutes: frequencyTotal(firstFrequencies) * 60,
+        servicePeriods: firstServicePeriods,
+        behaviorFrequencies: JSON.stringify(firstFrequencies),
         triggers: "",
         staffInterventions: "",
         outcome: "",
@@ -244,6 +263,8 @@ async function main() {
 
     if (hasSecondShiftLog(cursor)) {
       const secondStaff = staffByKey[assignment.second];
+      const secondFrequencies = secondShiftFrequencies(cursor);
+      const secondServicePeriods = servicePeriodsForFrequencies(secondFrequencies, "SECOND");
       await prisma.cBHSEntry.create({
         data: {
           clientId: aaron.id,
@@ -255,9 +276,9 @@ async function main() {
           date: cursor,
           startTime: cursor,
           endTime: cursor,
-          durationMinutes: 120,
-          servicePeriods: "6PM-7PM, 8PM-9PM",
-          behaviorFrequencies: JSON.stringify(secondShiftFrequencies(cursor)),
+          durationMinutes: frequencyTotal(secondFrequencies) * 60,
+          servicePeriods: secondServicePeriods,
+          behaviorFrequencies: JSON.stringify(secondFrequencies),
           triggers: "",
           staffInterventions: "",
           outcome: "",
@@ -299,6 +320,19 @@ async function main() {
     createdSummaries += 1;
   }
 
+  const created = await prisma.cBHSEntry.findMany({
+    where: { clientId: aaron.id },
+    select: { servicePeriods: true, behaviorFrequencies: true }
+  });
+  const mismatchedEntries = created.filter((entry) => {
+    const frequencies = parseBehaviorFrequencies(entry.behaviorFrequencies);
+    return servicePeriodCount(entry.servicePeriods) !== frequencyTotal(frequencies);
+  }).length;
+  const behaviorTwoEntries = created.filter((entry) => {
+    const frequencies = parseBehaviorFrequencies(entry.behaviorFrequencies);
+    return Number(frequencies["2"] ?? 0) > 0;
+  }).length;
+
   console.log(JSON.stringify({
     client: aaron.name,
     providerOneId: aaron.clientId,
@@ -308,6 +342,8 @@ async function main() {
     deleted,
     createdEntries,
     createdSummaries,
+    mismatchedEntries,
+    behaviorTwoEntries,
     dobNote: "DOB was not visible in the supplied PDF; seeded as 01/01/1974 from prior approval."
   }, null, 2));
 }
