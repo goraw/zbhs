@@ -59,23 +59,21 @@ function staffAssignment(date: Date) {
   };
 }
 
-function cleanFrequencies(frequencies: Record<string, string>) {
-  return Object.fromEntries(Object.entries(frequencies).filter(([, value]) => value));
+function behaviorForDate(date: Date) {
+  const day = date.getUTCDay();
+  const weekIndex = Math.floor((date.getTime() - midnight(startDate).getTime()) / (7 * 24 * 60 * 60 * 1000));
+  const dayOfMonth = date.getUTCDate();
+
+  if (dayOfMonth === 10 || dayOfMonth === 24) return { line: "2", frequency: "1" };
+  if (day === 0 || day === 3 || day === 5) return { line: "4", frequency: day === 5 ? "2" : "1" };
+  if (day === 2 || day === 4) return { line: "6", frequency: day === 4 ? "2" : "1" };
+  if (day === 1) return { line: weekIndex % 3 === 0 ? "1" : "3", frequency: "1" };
+  return { line: weekIndex % 2 === 0 ? "1" : "5", frequency: "1" };
 }
 
 function firstShiftFrequencies(date: Date) {
-  const day = date.getUTCDay();
-  const weekIndex = Math.floor((date.getTime() - midnight(startDate).getTime()) / (7 * 24 * 60 * 60 * 1000));
-  const frequencies: Record<string, string> = {
-    "1": day === 2 || day === 4 || day === 6 ? "1" : "",
-    "3": day === 0 || day === 1 || day === 3 || day === 5 ? "1" : "",
-    "4": day === 0 || day === 3 || day === 5 ? "2" : "1",
-    "6": day === 2 || day === 4 ? "2" : "1"
-  };
-
-  if (day === 2 || (weekIndex % 2 === 0 && day === 5)) frequencies["2"] = "1";
-  if (day === 1 || day === 4) frequencies["5"] = "1";
-  return cleanFrequencies(frequencies);
+  const behavior = behaviorForDate(date);
+  return { [behavior.line]: behavior.frequency };
 }
 
 function hasSecondShiftLog(date: Date) {
@@ -84,17 +82,8 @@ function hasSecondShiftLog(date: Date) {
 }
 
 function secondShiftFrequencies(date: Date) {
-  const day = date.getUTCDay();
-  const weekIndex = Math.floor((date.getTime() - midnight(startDate).getTime()) / (7 * 24 * 60 * 60 * 1000));
-  const frequencies: Record<string, string> = {
-    "1": day === 0 || day === 6 ? "1" : "",
-    "4": "1",
-    "6": day === 2 || day === 4 ? "2" : "1"
-  };
-
-  if (day === 4 || (weekIndex % 2 === 1 && day === 6)) frequencies["2"] = "1";
-  if (day === 0) frequencies["3"] = "1";
-  return cleanFrequencies(frequencies);
+  const behavior = behaviorForDate(date);
+  return { [behavior.line]: behavior.line === "2" ? "1" : "1" };
 }
 
 function sentenceList(items: string[]) {
