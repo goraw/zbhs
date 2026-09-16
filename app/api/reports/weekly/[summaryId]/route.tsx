@@ -5,6 +5,14 @@ import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
 import { WeeklyCBHSReport } from "@/lib/pdf/weekly-cbhs-report";
 
+function reportWeekRange(weekStart: Date) {
+  const start = new Date(weekStart);
+  start.setHours(0, 0, 0, 0);
+  const endExclusive = new Date(start);
+  endExclusive.setDate(endExclusive.getDate() + 7);
+  return { start, endExclusive };
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ summaryId: string }> }) {
   const user = await getCurrentUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
@@ -19,10 +27,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return new NextResponse("Signed weekly summary not found", { status: 404 });
   }
 
+  const { start, endExclusive } = reportWeekRange(summary.weekStart);
   const entries = await prisma.cBHSEntry.findMany({
       where: {
         clientId: summary.clientId,
-        date: { gte: summary.weekStart, lte: summary.weekEnd },
+        // Re-query current signed daily logs at preview/download time so a
+        // deleted log that is added back is reflected immediately in reports.
+        date: { gte: start, lt: endExclusive },
         status: "SIGNED"
       },
       include: { staff: true, shiftStaff: true, firstShiftStaff: true, secondShiftStaff: true },

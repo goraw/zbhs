@@ -49,6 +49,12 @@ function weekDate(weekStart: Date, dayIndex: number) {
   return date;
 }
 
+function serviceDateKey(date: Date) {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 function frequencySummary(frequencies: Record<string, string>) {
   return cbhsStandardLines
     .map((line) => {
@@ -112,8 +118,8 @@ export function WeeklyCBHSReport({
             <Text style={[styles.cell, { width: "12%", borderRightWidth: 0 }]}>Staff Initials</Text>
           </View>
           {dayNames.map((dayName, dayIndex) => {
-            const dayEntries = entries.filter((entry) => entry.date.getDay() === dayIndex);
             const serviceDate = weekDate(summary.weekStart, dayIndex);
+            const dayEntries = entries.filter((entry) => serviceDateKey(entry.date) === serviceDateKey(serviceDate));
             return (
               <View key={dayName} wrap={false}>
                 {dayEntries.length ? dayEntries.map((entry) => {
