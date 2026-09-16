@@ -219,7 +219,7 @@ async function main() {
   const aaron = await prisma.client.create({
     data: {
       name: "Aaron Worley",
-      dob: new Date("1974-01-01T00:00:00.000Z"),
+      dob: new Date("1974-01-28T00:00:00.000Z"),
       clientId: providerOneId,
       authorizationTier: "Tier 2 supportive supervision, 2.1-6 hours/day, RSW/AFH-High; ProviderOne 101663574WA; assessment 10/08/2025, completed 10/29/2025"
     }
@@ -344,7 +344,7 @@ async function main() {
     createdSummaries,
     mismatchedEntries,
     behaviorTwoEntries,
-    dobNote: "DOB was not visible in the supplied PDF; seeded as 01/01/1974 from prior approval."
+    dob: "01/28/1974"
   }, null, 2));
 }
 
