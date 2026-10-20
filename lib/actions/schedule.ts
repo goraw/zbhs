@@ -29,6 +29,7 @@ export async function assignShift(_: { message: string; ok: boolean }, formData:
     // Audit and assignment commit together, so no unaudited schedule change persists.
     await tx.auditLog.create({ data: { userId: actor.id, action: "ASSIGN_SHIFT", details: `Assigned ${assignment.id}: staff ${staff.id}, ${data.date}, ${data.shift}.` } });
     revalidatePath("/schedule");
+    revalidatePath("/reports");
     return { ok: true, message: "Shift assigned." };
   });
 }
@@ -41,4 +42,5 @@ export async function removeShift(formData: FormData) {
     await tx.auditLog.create({ data: { userId: actor.id, action: "REMOVE_SHIFT", details: `Removed ${assignment.id}: staff ${assignment.staffId}, ${assignment.date}, ${assignment.shift}.` } });
   });
   revalidatePath("/schedule");
+  revalidatePath("/reports");
 }

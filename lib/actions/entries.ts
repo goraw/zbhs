@@ -130,6 +130,8 @@ async function saveLoggedEntryCreate(input: unknown) {
   });
 
   revalidatePath("/logs");
+  revalidatePath("/schedule");
+  revalidatePath("/reports");
 }
 
 export async function updateLoggedEntry(entryId: string, input: unknown) {
@@ -190,6 +192,8 @@ async function saveLoggedEntryUpdate(entryId: string, input: unknown) {
   });
 
   revalidatePath("/logs");
+  revalidatePath("/schedule");
+  revalidatePath("/reports");
 }
 
 export async function deleteLoggedEntry(formData: FormData) {
@@ -210,4 +214,6 @@ export async function deleteLoggedEntry(formData: FormData) {
   });
 
   revalidatePath("/logs");
+  revalidatePath("/schedule");
+  revalidatePath("/reports");
 }

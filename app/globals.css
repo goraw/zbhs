@@ -45,3 +45,17 @@ body {
     scroll-behavior: smooth;
   }
 }
+
+@media print {
+  body:has(.staff-report) { background: white; color: black; }
+  body:has(.staff-report) aside,
+  body:has(.staff-report) .report-controls { display: none !important; }
+  body:has(.staff-report) main { padding: 0; min-width: 0; }
+  body:has(.staff-report) .app-page-shell { max-width: none; animation: none; }
+  .staff-report { font-size: 10pt; }
+  .staff-report .overflow-x-auto { overflow: visible; }
+  .staff-report table { width: 100%; font-size: 9pt; }
+  .staff-report thead { display: table-header-group; }
+  .staff-report tr { break-inside: avoid; }
+  .staff-report th, .staff-report td { padding: 5pt; }
+}
