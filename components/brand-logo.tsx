@@ -39,8 +39,8 @@ export function BrandLogo({ compact = false, className }: { compact?: boolean; c
       </div>
       {!compact ? (
         <div className="min-w-0">
-          <div className="text-lg font-bold tracking-normal text-primary">ZBHS</div>
-          <div className="text-xs font-medium text-muted-foreground">Secure CBHS Logs</div>
+          <div className="text-lg font-bold tracking-normal text-primary">Zagol Care</div>
+          <div className="text-xs font-medium text-muted-foreground">Staff & Care Portal</div>
         </div>
       ) : null}
     </div>

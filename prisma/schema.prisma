@@ -48,6 +48,19 @@ model User {
   secondShiftEntries CBHSEntry[]    @relation("SecondShiftStaff")
   weeklySummaries    WeeklySummary[]
   auditLogs          AuditLog[]
+  shiftAssignments   ShiftAssignment[]
+}
+
+model ShiftAssignment {
+  id        String      @id @default(cuid())
+  staffId   String
+  date      String
+  shift     ShiftPeriod
+  createdAt DateTime    @default(now())
+  staff     User        @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  @@unique([staffId, date, shift])
+  @@index([date, shift])
 }
 
 model Client {

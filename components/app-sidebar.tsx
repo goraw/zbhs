@@ -13,6 +13,7 @@ export function AppSidebar({ user }: { user: SidebarUser }) {
     ["/behaviors", "Behaviors", BookOpen],
     ["/logs", "Client Logs", ClipboardList],
     ["/weekly", "Weekly Summary", CalendarDays],
+    ["/schedule", user.role === "SUPER_ADMIN" ? "Staff Schedule" : "My Schedule", CalendarDays],
     ["/audit", "Audit Trail", FileClock],
     ...(user.role === "SUPER_ADMIN" ? [["/admin/users", "User Management", Shield] as const] : [])
   ] as const;

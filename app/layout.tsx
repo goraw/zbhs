@@ -3,8 +3,8 @@ import "./globals.css";
 import { SessionProvider } from "@/components/session-provider";
 
 export const metadata: Metadata = {
-  title: "CBHS Secure Logs",
-  description: "Local-first CBHS logging and reporting",
+  title: "Zagol Care Portal",
+  description: "Care documentation and staff scheduling",
   icons: {
     icon: "/favicon.svg"
   }
