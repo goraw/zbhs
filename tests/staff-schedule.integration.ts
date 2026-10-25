@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { prisma } from "../lib/prisma";
 import { getStaffSchedule } from "../lib/staff-schedule";
+import { assignStaffShift, revokeStaffShift, retireWorkShift } from "../lib/hr-service";
 
 // Run only against a fresh temporary database, with --conditions=react-server.
 async function main() {
@@ -31,7 +32,24 @@ async function main() {
   assert.equal((await getStaffSchedule(admin, filters))[0].logCount, 1, "Re-added log appears immediately");
   await prisma.cBHSEntry.create({ data: { ...data, date: new Date("2026-10-21T00:00:00Z") } });
   assert.equal((await getStaffSchedule(admin, filters))[0].logCount, 1, "Exclusive upper date boundary works");
-  console.log("PASS: live query, manual merge, caregiver/shift edit, delete/re-add, date boundaries, employee isolation");
+  const key = { staffId: first.id, date: "2026-10-20", workShiftId: "hr-first" };
+  const clinicalCount = await prisma.cBHSEntry.count();
+  await prisma.$transaction((tx) => revokeStaffShift(tx, admin.id, key));
+  assert.equal((await getStaffSchedule(admin, filters)).length, 0, "Revocation suppresses log-derived assignments");
+  assert.equal(await prisma.cBHSEntry.count(), clinicalCount, "HR revocation must not delete clinical records");
+  await prisma.$transaction((tx) => assignStaffShift(tx, admin.id, key));
+  assert.equal((await getStaffSchedule(admin, filters)).length, 1, "Reassignment clears the revocation");
+  await assert.rejects(prisma.$transaction((tx) => assignStaffShift(tx, admin.id, key)), /already assigned/);
+  const late = await prisma.workShift.create({ data: { name: "Late Test", startMinute: 1380, endMinute: 60 } });
+  await prisma.$transaction((tx) => assignStaffShift(tx, admin.id, { ...key, workShiftId: late.id }));
+  const early = await prisma.workShift.create({ data: { name: "Early Test", startMinute: 0, endMinute: 120 } });
+  await assert.rejects(prisma.$transaction((tx) => assignStaffShift(tx, admin.id, { ...key, date: "2026-10-21", workShiftId: early.id })), /overlapping/);
+  await assert.rejects(prisma.$transaction((tx) => retireWorkShift(tx, admin.id, "hr-cover")), /uncovered/);
+  await prisma.workShift.create({ data: { name: "Replacement Cover", startMinute: 840, endMinute: 960 } });
+  await prisma.$transaction((tx) => retireWorkShift(tx, admin.id, "hr-cover"));
+  assert.equal((await prisma.workShift.findUniqueOrThrow({ where: { id: "hr-cover" } })).isActive, false);
+  assert.ok(await prisma.auditLog.count({ where: { action: "REVOKE_SHIFT" } }));
+  console.log("PASS: migration, synchronization, employee isolation, durable revocation, reassignment, audit, overnight conflicts, 24-hour coverage protection");
 }
 
 main().finally(() => prisma.$disconnect());

@@ -1,21 +1,23 @@
 import type { ShiftPeriod } from "@prisma/client";
+import { defaultWorkShifts, shiftTime, shiftHours, type WorkShiftData } from "@/lib/hr";
 
 export const shiftLabels: Record<ShiftPeriod, string> = {
   FIRST: "First (6AM-2PM)",
   SECOND: "Second (4PM-10PM)",
   THIRD: "Third (10PM-6AM next day)"
 };
-export type ScheduleFilters = { from: string; to: string; staffId: string; shift: ShiftPeriod | "" };
+export type ScheduleFilters = { from: string; to: string; staffId: string; shift: ShiftPeriod | ""; workShiftId?: string };
 export type ScheduleRow = {
-  key: string; staffId: string; staffName: string; date: string; shift: ShiftPeriod;
+  key: string; staffId: string; staffName: string; date: string; shift: ShiftPeriod | "CUSTOM";
+  workShiftId: string; shiftName: string; startMinute: number; endMinute: number; staffActive: boolean;
   manualAssignmentId: string | null; logCount: number; clientCount: number;
 };
-type Staff = { id: string; name: string; role: string };
+type Staff = { id: string; name: string; role: string; isActive?: boolean };
 export type ScheduleLog = {
   date: Date; shift: ShiftPeriod; clientId: string;
   staff: Staff; shiftStaff: Staff | null; firstShiftStaff: Staff | null; secondShiftStaff: Staff | null;
 };
-type ManualAssignment = { id: string; staffId: string; date: string; shift: ShiftPeriod; staff: { name: string } };
+type ManualAssignment = { id: string; staffId: string; date: string; shift: ShiftPeriod | null; workShiftId?: string; staff: { name: string; isActive?: boolean } };
 
 export function isScheduleDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -35,7 +37,11 @@ export function scheduleFilters(params: Record<string, string | string[] | undef
   if (to < from) throw new Error("The end date must be on or after the start date.");
   if (Date.parse(to) - Date.parse(from) > 1095 * 86400000) throw new Error("Choose a date range of three years or less.");
   const shift = typeof params.shift === "string" && ["FIRST", "SECOND", "THIRD"].includes(params.shift) ? params.shift as ShiftPeriod : "";
-  return { from, to, staffId: typeof params.staffId === "string" ? params.staffId : "", shift };
+  return { from, to, staffId: typeof params.staffId === "string" ? params.staffId : "", shift, workShiftId: typeof params.workShiftId === "string" ? params.workShiftId : "" };
+}
+
+export function scheduleQuery(filters: ScheduleFilters) {
+  return new URLSearchParams(Object.entries(filters).filter((pair): pair is [string, string] => typeof pair[1] === "string"));
 }
 
 export function assignmentStaff(entry: ScheduleLog): Staff {
@@ -43,27 +49,34 @@ export function assignmentStaff(entry: ScheduleLog): Staff {
   return entry.shiftStaff ?? (entry.shift === "FIRST" ? entry.firstShiftStaff : entry.shift === "SECOND" ? entry.secondShiftStaff : null) ?? entry.staff;
 }
 
-export function mergeSchedule(manual: ManualAssignment[], logs: ScheduleLog[]): ScheduleRow[] {
+export function mergeSchedule(manual: ManualAssignment[], logs: ScheduleLog[], templates = defaultWorkShifts, revoked: { staffId: string; date: string; workShiftId: string }[] = []): ScheduleRow[] {
   const rows = new Map<string, ScheduleRow & { clients: Set<string> }>();
-  const keyFor = (staffId: string, date: string, shift: ShiftPeriod) => `${staffId}:${date}:${shift}`;
+  const keyFor = (staffId: string, date: string, shift: string) => `${staffId}:${date}:${shift}`;
+  const excluded = new Set(revoked.map((item) => keyFor(item.staffId, item.date, item.workShiftId)));
+  const fields = (shift: WorkShiftData) => ({ workShiftId: shift.id, shiftName: shift.name, startMinute: shift.startMinute, endMinute: shift.endMinute, shift: shift.legacyShift ?? "CUSTOM" as const });
   for (const item of manual) {
-    const key = keyFor(item.staffId, item.date, item.shift);
-    rows.set(key, { key, staffId: item.staffId, staffName: item.staff.name, date: item.date, shift: item.shift, manualAssignmentId: item.id, logCount: 0, clientCount: 0, clients: new Set() });
+    const template = templates.find((shift) => item.workShiftId ? shift.id === item.workShiftId : shift.legacyShift === item.shift);
+    if (!template) continue;
+    const key = keyFor(item.staffId, item.date, template.id);
+    if (excluded.has(key)) continue;
+    rows.set(key, { key, staffId: item.staffId, staffName: item.staff.name, staffActive: item.staff.isActive ?? true, date: item.date, ...fields(template), manualAssignmentId: item.id, logCount: 0, clientCount: 0, clients: new Set() });
   }
   for (const entry of logs) {
     const staff = assignmentStaff(entry);
     if (staff.role !== "STAFF") continue;
     const date = entry.date.toISOString().slice(0, 10);
-    const key = keyFor(staff.id, date, entry.shift);
-    const row = rows.get(key) ?? { key, staffId: staff.id, staffName: staff.name, date, shift: entry.shift, manualAssignmentId: null, logCount: 0, clientCount: 0, clients: new Set<string>() };
+    const template = templates.find((shift) => shift.legacyShift === entry.shift);
+    if (!template) continue;
+    const key = keyFor(staff.id, date, template.id);
+    if (excluded.has(key)) continue;
+    const row = rows.get(key) ?? { key, staffId: staff.id, staffName: staff.name, staffActive: staff.isActive ?? true, date, ...fields(template), manualAssignmentId: null, logCount: 0, clientCount: 0, clients: new Set<string>() };
     row.logCount += 1;
     row.clients.add(entry.clientId);
     row.clientCount = row.clients.size;
     rows.set(key, row);
   }
-  const order = { FIRST: 0, SECOND: 1, THIRD: 2 };
   return Array.from(rows.values()).map(({ clients: _clients, ...row }) => row)
-    .sort((a, b) => b.date.localeCompare(a.date) || order[a.shift] - order[b.shift] || a.staffName.localeCompare(b.staffName) || a.staffId.localeCompare(b.staffId));
+    .sort((a, b) => b.date.localeCompare(a.date) || a.startMinute - b.startMinute || a.staffName.localeCompare(b.staffName) || a.staffId.localeCompare(b.staffId));
 }
 
 export function scheduleSource(row: ScheduleRow) {
@@ -94,6 +107,6 @@ export function scheduleCsv(rows: ScheduleRow[]) {
     const safe = /^[\s]*[=+@-]/.test(text) || /^[\t\r\n]/.test(text) ? `'${text}` : text;
     return `"${safe.replace(/"/g, '""')}"`;
   };
-  const data = [["Date", "Staff", "Shift", "Source", "Client logs", "Clients"], ...rows.map((row) => [americanScheduleDate(row.date), row.staffName, shiftLabels[row.shift], scheduleSource(row), row.logCount, row.clientCount])];
+  const data = [["Date", "Staff", "Shift", "Time", "Scheduled hours"], ...rows.map((row) => [americanScheduleDate(row.date), row.staffName, row.shiftName, shiftTime(row), shiftHours(row)])];
   return "\uFEFF" + data.map((row) => row.map(cell).join(",")).join("\r\n");
 }

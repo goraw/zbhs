@@ -49,17 +49,44 @@ model User {
   weeklySummaries    WeeklySummary[]
   auditLogs          AuditLog[]
   shiftAssignments   ShiftAssignment[]
+  shiftRevocations   ShiftRevocation[]
+}
+
+model WorkShift {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  startMinute Int
+  endMinute   Int
+  minimumStaff Int         @default(1)
+  isActive    Boolean      @default(true)
+  legacyShift ShiftPeriod? @unique
+  assignments ShiftAssignment[]
+  revocations ShiftRevocation[]
+}
+
+model ShiftRevocation {
+  id          String    @id @default(cuid())
+  staffId     String
+  date        String
+  workShiftId String
+  staff       User      @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  workShift   WorkShift @relation(fields: [workShiftId], references: [id], onDelete: Restrict)
+  @@unique([staffId, date, workShiftId])
+  @@index([date])
 }
 
 model ShiftAssignment {
   id        String      @id @default(cuid())
   staffId   String
   date      String
-  shift     ShiftPeriod
+  shift     ShiftPeriod?
+  workShiftId String    @default("hr-first")
   createdAt DateTime    @default(now())
   staff     User        @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  workShift WorkShift   @relation(fields: [workShiftId], references: [id], onDelete: Restrict)
 
   @@unique([staffId, date, shift])
+  @@unique([staffId, date, workShiftId])
   @@index([date, shift])
 }
 

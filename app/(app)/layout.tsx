@@ -11,9 +11,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen flex-col md:flex-row">
       <AppSidebar user={user} />
-      <main className="flex-1 p-4 md:p-8">
+      <main className="min-w-0 flex-1 p-4 md:p-8">
         <IdleLogout />
         <div className="app-page-shell mx-auto max-w-7xl">
           {children}

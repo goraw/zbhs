@@ -57,5 +57,8 @@ test("CSV neutralizes formulas and includes all rows with correct dates and coun
   assert.equal(csv.split("\r\n").length, 3);
   assert.ok(csv.includes("10/20/2026"));
   assert.ok(csv.includes("'=HYPERLINK"));
-  assert.ok(csv.includes('"Client logs","1","1"'));
+  assert.ok(csv.includes('"Scheduled hours"'));
+  assert.ok(!csv.includes('"Client logs"'));
+  assert.ok(!csv.includes('"Source"'));
+  assert.ok(!csv.includes('"Clients"'));
 });

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   try { filters = scheduleFilters(Object.fromEntries(request.nextUrl.searchParams)); }
   catch (cause) { return NextResponse.json({ error: cause instanceof Error ? cause.message : "Invalid filters." }, { status: 400 }); }
   const rows = await getStaffSchedule(user, filters);
-  await audit("EXPORT_STAFF_SCHEDULE", { userId: user.id, request, details: `Exported staff schedule ${filters.from} through ${filters.to}; ${rows.length} shifts; staff ${filters.staffId || "all"}; shift ${filters.shift || "all"}.` });
+  await audit("EXPORT_STAFF_SCHEDULE", { userId: user.id, request, details: `Exported staff schedule ${filters.from} through ${filters.to}; ${rows.length} shifts; staff ${filters.staffId || "all"}; shift ${filters.workShiftId || filters.shift || "all"}.` });
   return new NextResponse(scheduleCsv(rows), { headers: {
     "Content-Type": "text/csv; charset=utf-8",
     "Content-Disposition": `attachment; filename="staff-schedule-${filters.from}-${filters.to}.csv"`,
