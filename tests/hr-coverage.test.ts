@@ -1,12 +1,23 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { coverageGaps, defaultWorkShifts, openShiftSlots, shiftsOverlap, weekDays } from "../lib/hr";
+import { coverageGaps, defaultWorkShifts, openShiftSlots, shiftsOverlap, shiftHours, weekDays } from "../lib/hr";
 import { mergeSchedule } from "../lib/schedule-report";
+import { cbhsEntrySchema } from "../lib/validation";
 
-test("default shift definitions cover all 24 hours and detect the original afternoon gap", () => {
+test("three eight-hour shifts cover all 24 hours starting at 6AM", () => {
+  assert.equal(defaultWorkShifts.length, 3);
+  assert.deepEqual(defaultWorkShifts.map((shift) => shift.startMinute), [360, 840, 1320]);
+  assert.ok(defaultWorkShifts.every((shift) => shiftHours(shift) === 8));
   assert.deepEqual(coverageGaps(defaultWorkShifts), []);
-  assert.deepEqual(coverageGaps(defaultWorkShifts.filter((shift) => shift.id !== "hr-cover")), [{ start: 840, end: 960 }]);
+  assert.deepEqual(coverageGaps(defaultWorkShifts.filter((shift) => shift.id !== "hr-second")), [{ start: 840, end: 1320 }]);
   assert.deepEqual(coverageGaps([]), [{ start: 0, end: 1440 }]);
+  assert.equal(openShiftSlots(weekDays("2026-10-24"), defaultWorkShifts, []).length, 21);
+});
+
+test("daily log validation accepts second-shift service periods from 2PM", () => {
+  const entry = { clientId: "test-client", shiftStaffId: "test-staff", date: "2026-10-24", shift: "SECOND", servicePeriods: "2PM-3PM", behaviorFrequencies: { "5": "1" } };
+  assert.equal(cbhsEntrySchema.safeParse(entry).success, true);
+  assert.equal(cbhsEntrySchema.safeParse({ ...entry, servicePeriods: "1PM-2PM" }).success, false);
 });
 
 test("minimum staffing counts unique employees and detects open shifts", () => {
@@ -17,7 +28,7 @@ test("minimum staffing counts unique employees and detects open shifts", () => {
 });
 
 test("overlap protection spans midnight but permits back-to-back shifts", () => {
-  const night = defaultWorkShifts[3];
+  const night = defaultWorkShifts[2];
   assert.equal(shiftsOverlap("2026-10-23", night, "2026-10-24", { startMinute: 300, endMinute: 420 }), true);
   assert.equal(shiftsOverlap("2026-10-23", night, "2026-10-24", defaultWorkShifts[0]), false);
   assert.equal(shiftsOverlap("2026-10-24", defaultWorkShifts[0], "2026-10-24", defaultWorkShifts[1]), false);

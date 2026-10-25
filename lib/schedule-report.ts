@@ -3,7 +3,7 @@ import { defaultWorkShifts, shiftTime, shiftHours, type WorkShiftData } from "@/
 
 export const shiftLabels: Record<ShiftPeriod, string> = {
   FIRST: "First (6AM-2PM)",
-  SECOND: "Second (4PM-10PM)",
+  SECOND: "Second (2PM-10PM)",
   THIRD: "Third (10PM-6AM next day)"
 };
 export type ScheduleFilters = { from: string; to: string; staffId: string; shift: ShiftPeriod | ""; workShiftId?: string };

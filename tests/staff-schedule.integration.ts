@@ -44,10 +44,10 @@ async function main() {
   await prisma.$transaction((tx) => assignStaffShift(tx, admin.id, { ...key, workShiftId: late.id }));
   const early = await prisma.workShift.create({ data: { name: "Early Test", startMinute: 0, endMinute: 120 } });
   await assert.rejects(prisma.$transaction((tx) => assignStaffShift(tx, admin.id, { ...key, date: "2026-10-21", workShiftId: early.id })), /overlapping/);
-  await assert.rejects(prisma.$transaction((tx) => retireWorkShift(tx, admin.id, "hr-cover")), /uncovered/);
-  await prisma.workShift.create({ data: { name: "Replacement Cover", startMinute: 840, endMinute: 960 } });
-  await prisma.$transaction((tx) => retireWorkShift(tx, admin.id, "hr-cover"));
-  assert.equal((await prisma.workShift.findUniqueOrThrow({ where: { id: "hr-cover" } })).isActive, false);
+  await assert.rejects(prisma.$transaction((tx) => retireWorkShift(tx, admin.id, "hr-second")), /uncovered/);
+  await prisma.workShift.create({ data: { name: "Replacement Second", startMinute: 840, endMinute: 1320 } });
+  await prisma.$transaction((tx) => retireWorkShift(tx, admin.id, "hr-second"));
+  assert.equal((await prisma.workShift.findUniqueOrThrow({ where: { id: "hr-second" } })).isActive, false);
   assert.ok(await prisma.auditLog.count({ where: { action: "REVOKE_SHIFT" } }));
   console.log("PASS: migration, synchronization, employee isolation, durable revocation, reassignment, audit, overnight conflicts, 24-hour coverage protection");
 }

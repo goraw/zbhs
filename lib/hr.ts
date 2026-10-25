@@ -3,8 +3,7 @@ import type { ShiftPeriod } from "@prisma/client";
 export type WorkShiftData = { id: string; name: string; startMinute: number; endMinute: number; minimumStaff: number; isActive: boolean; legacyShift: ShiftPeriod | null };
 export const defaultWorkShifts: WorkShiftData[] = [
   { id: "hr-first", name: "First shift", startMinute: 360, endMinute: 840, minimumStaff: 1, isActive: true, legacyShift: "FIRST" },
-  { id: "hr-cover", name: "Afternoon cover", startMinute: 840, endMinute: 960, minimumStaff: 1, isActive: true, legacyShift: null },
-  { id: "hr-second", name: "Second shift", startMinute: 960, endMinute: 1320, minimumStaff: 1, isActive: true, legacyShift: "SECOND" },
+  { id: "hr-second", name: "Second shift", startMinute: 840, endMinute: 1320, minimumStaff: 1, isActive: true, legacyShift: "SECOND" },
   { id: "hr-third", name: "Night shift", startMinute: 1320, endMinute: 360, minimumStaff: 1, isActive: true, legacyShift: "THIRD" }
 ];
 

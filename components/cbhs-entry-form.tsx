@@ -56,7 +56,7 @@ function shiftRelativeMinutes(value: string, shift: Shift) {
 
 function shiftBounds(shift: Shift) {
   if (shift === "FIRST") return { start: 6 * 60, end: 14 * 60 };
-  if (shift === "SECOND") return { start: 16 * 60, end: 22 * 60 };
+  if (shift === "SECOND") return { start: 14 * 60, end: 22 * 60 };
   return { start: 22 * 60, end: 30 * 60 };
 }
 
@@ -451,7 +451,7 @@ export function CBHSEntryForm({
                 onChange={(event) => handleShiftChange(event.target.value as Shift, field.onChange)}
               >
                 <option value="FIRST">First shift (6AM-2PM)</option>
-                <option value="SECOND">Second shift (4PM-10PM)</option>
+                <option value="SECOND">Second shift (2PM-10PM)</option>
                 <option value="THIRD">Third shift (10PM-6AM)</option>
               </Select>
             )}
