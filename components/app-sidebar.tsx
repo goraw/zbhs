@@ -13,6 +13,7 @@ export function AppSidebar({ user }: { user: SidebarUser }) {
     ["/behaviors", "Behaviors", BookOpen],
     ["/logs", "Client Logs", ClipboardList],
     ["/weekly", "Weekly Summary", CalendarDays],
+    ["/monthly", "Monthly Progress", ClipboardList],
     ["/schedule", user.role === "SUPER_ADMIN" ? "HR & Staffing" : "My Schedule", CalendarDays],
     ...(user.role === "SUPER_ADMIN" ? [["/reports", "Staff Reports", BarChart3] as const] : []),
     ["/audit", "Audit Trail", FileClock],

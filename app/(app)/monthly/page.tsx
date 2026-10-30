@@ -1,0 +1,41 @@
+import Link from "next/link";
+import { ArrowRight, Download, Eye, Search } from "lucide-react";
+import { requireUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { currentMonth, monthLabel, validMonth } from "@/lib/monthly-progress";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+
+export const dynamic = "force-dynamic";
+
+export default async function MonthlyProgressPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  await requireUser();
+  const params = await searchParams;
+  const month = typeof params.month === "string" && validMonth(params.month) ? params.month : currentMonth();
+  const query = typeof params.q === "string" ? params.q.trim().slice(0, 100) : "";
+  const status = typeof params.status === "string" ? params.status : "";
+  // Every resident is listed, whether or not any CBHS logs exist for them.
+  const clients = await prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, monthlyReports: { where: { month }, select: { id: true, status: true, authorName: true, updatedAt: true } } } });
+  const completed = clients.filter((client) => client.monthlyReports[0]?.status === "COMPLETED").length;
+  const drafts = clients.filter((client) => client.monthlyReports[0]?.status === "DRAFT").length;
+  const visible = clients.filter((client) => (!query || client.name.toLowerCase().includes(query.toLowerCase())) && (!status || (client.monthlyReports[0]?.status ?? "MISSING") === status));
+  const packet = "/api/reports/monthly?month=" + month;
+  return <section className="space-y-6">
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-semibold">Monthly Resident Progress</h1><p className="mt-1 text-sm text-muted-foreground">{monthLabel(month)}</p></div>
+      {completed > 0 && <div className="flex flex-wrap gap-2"><Button asChild variant="secondary"><Link href={packet + "&preview=1"} target="_blank" rel="noopener noreferrer" prefetch={false}><Eye className="h-4 w-4" />Preview packet</Link></Button><Button asChild><Link href={packet} prefetch={false}><Download className="h-4 w-4" />Completed packet ({completed})</Link></Button></div>}
+    </div>
+    <dl className="grid grid-cols-3 gap-4 border-y py-4">{[["Completed", completed], ["Draft", drafts], ["Not started", clients.length - completed - drafts]].map(([label, value]) => <div key={label}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1 text-2xl font-semibold tabular-nums">{value}</dd></div>)}</dl>
+    <form action="/monthly" className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-4"><div><Label htmlFor="monthly-month">Reporting month</Label><Input id="monthly-month" name="month" type="month" defaultValue={month} required /></div><div><Label htmlFor="monthly-search">Resident</Label><Input id="monthly-search" name="q" defaultValue={query} placeholder="Search residents" /></div><div><Label htmlFor="monthly-status">Status</Label><Select id="monthly-status" name="status" defaultValue={status}><option value="">All reports</option><option value="MISSING">Not started</option><option value="DRAFT">Draft</option><option value="COMPLETED">Completed</option></Select></div><Button type="submit"><Search className="h-4 w-4" />Filter</Button></form>
+    <div className="divide-y border-y md:hidden">{visible.map((client) => {
+      const report = client.monthlyReports[0];
+      const label = report?.status === "COMPLETED" ? "View" : report ? "Continue" : "Start";
+      return <div key={client.id} className="flex items-center justify-between gap-3 py-4"><div className="min-w-0"><h2 className="break-words font-semibold">{client.name}</h2><p className={(report?.status === "COMPLETED" ? "text-emerald-800" : report ? "text-amber-800" : "text-muted-foreground") + " mt-1 text-sm"}>{report?.status === "COMPLETED" ? "Completed" : report ? "Draft" : "Not started"}</p>{report && <p className="mt-1 break-words text-xs text-muted-foreground">{report.authorName}</p>}</div><Button asChild size="sm" variant="secondary"><Link aria-label={label + " report for " + client.name} href={"/monthly/" + client.id + "?month=" + month}>{label}<ArrowRight className="h-4 w-4" /></Link></Button></div>;
+    })}{!visible.length && <p className="py-6 text-sm text-muted-foreground">No residents match these filters.</p>}</div>
+    <div className="hidden overflow-x-auto md:block"><table className="w-full text-left text-sm"><thead className="bg-muted"><tr>{["Resident", "Status", "Last caregiver", "Updated", "Report"].map((label) => <th key={label} scope="col" className="p-3">{label}</th>)}</tr></thead><tbody>{visible.map((client) => {
+      const report = client.monthlyReports[0];
+      return <tr key={client.id} className="border-b"><td className="p-3 font-medium">{client.name}</td><td className="p-3"><span className={(report?.status === "COMPLETED" ? "bg-emerald-50 text-emerald-800" : report ? "bg-amber-50 text-amber-800" : "bg-muted text-muted-foreground") + " whitespace-nowrap rounded px-2 py-1 text-xs font-semibold"}>{report?.status === "COMPLETED" ? "Completed" : report ? "Draft" : "Not started"}</span></td><td className="p-3">{report?.authorName ?? "-"}</td><td className="whitespace-nowrap p-3">{report?.updatedAt.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles" }) ?? "-"}</td><td className="p-3"><Link className="inline-flex items-center gap-1 font-medium text-primary underline" href={"/monthly/" + client.id + "?month=" + month}>{report?.status === "COMPLETED" ? "View" : report ? "Continue" : "Start"}<ArrowRight className="h-4 w-4" /></Link></td></tr>;
+    })}{!visible.length && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No residents match these filters.</td></tr>}</tbody></table></div>
+  </section>;
+}

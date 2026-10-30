@@ -50,6 +50,8 @@ model User {
   auditLogs          AuditLog[]
   shiftAssignments   ShiftAssignment[]
   shiftRevocations   ShiftRevocation[]
+  monthlyReports     MonthlyProgress[]
+  monthlyRevisions   MonthlyProgressRevision[]
 }
 
 model WorkShift {
@@ -101,6 +103,47 @@ model Client {
   behaviors         Behavior[]
   entries           CBHSEntry[]
   weeklySummaries   WeeklySummary[]
+  monthlyReports    MonthlyProgress[]
+}
+
+enum MonthlyProgressStatus {
+  DRAFT
+  COMPLETED
+}
+
+model MonthlyProgress {
+  id          String   @id @default(cuid())
+  clientId    String
+  month       String
+  staffId     String
+  authorName  String
+  content     String
+  status      MonthlyProgressStatus @default(DRAFT)
+  version     Int      @default(1)
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  staff       User     @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  revisions   MonthlyProgressRevision[]
+  @@unique([clientId, month])
+  @@index([month, status])
+}
+
+model MonthlyProgressRevision {
+  id          String   @id @default(cuid())
+  reportId    String
+  version     Int
+  staffId     String
+  authorName  String
+  content     String
+  status      MonthlyProgressStatus
+  reason      String
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  report      MonthlyProgress @relation(fields: [reportId], references: [id], onDelete: Restrict)
+  staff       User     @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  @@unique([reportId, version])
 }
 
 model Behavior {
