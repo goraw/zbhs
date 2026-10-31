@@ -12,7 +12,7 @@ export default async function DashboardPage() {
   ]);
 
   const stats: Array<[string, number, LucideIcon]> = [
-    ["Clients", clients, Users],
+    ["Residents", clients, Users],
     ["Behaviors", behaviors, BookOpen],
     ["Signed Logs", signedEntries, Lock],
     ["Audit Events", auditLogs, FileText]

@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 
 export const dynamic = "force-dynamic";
 
-function formatAmericanDate(date: Date) {
-  return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+function formatAmericanDate(date: Date | null) {
+  return date ? date.toLocaleDateString("en-US", { timeZone: "UTC", month: "2-digit", day: "2-digit", year: "numeric" }) : "Not available on file";
 }
 
 export default async function ClientsPage() {
@@ -16,8 +16,7 @@ export default async function ClientsPage() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Clients</h1>
-        <p className="text-sm text-muted-foreground">Local client records used for CBHS session logs.</p>
+        <h1 className="text-2xl font-semibold">Residents</h1>
       </div>
       <form action={createClient} className="grid gap-4 rounded-md border bg-white p-5 shadow-sm md:grid-cols-5">
         <div>
@@ -26,24 +25,24 @@ export default async function ClientsPage() {
         </div>
         <div>
           <Label htmlFor="dob">DOB</Label>
-          <Input id="dob" name="dob" type="date" required />
+          <Input id="dob" name="dob" type="date" />
         </div>
         <div>
-          <Label htmlFor="clientId">Client ID</Label>
+          <Label htmlFor="clientId">Medicaid / Resident ID</Label>
           <Input id="clientId" name="clientId" required />
         </div>
         <div>
           <Label htmlFor="authorizationTier">Authorization tier</Label>
-          <Input id="authorizationTier" name="authorizationTier" required />
+          <Input id="authorizationTier" name="authorizationTier" />
         </div>
         <div className="flex items-end">
-          <Button type="submit">Add client</Button>
+          <Button type="submit">Add resident</Button>
         </div>
       </form>
       <div className="overflow-hidden rounded-md border bg-white shadow-sm">
         <table className="w-full text-left text-sm">
           <thead className="bg-muted">
-            <tr><th className="p-3">Name</th><th className="p-3">Client ID</th><th className="p-3">Tier</th><th className="p-3">DOB</th></tr>
+            <tr><th className="p-3">Name</th><th className="p-3">Medicaid / Resident ID</th><th className="p-3">Tier</th><th className="p-3">DOB</th></tr>
           </thead>
           <tbody>
             {clients.map((client) => (

@@ -95,7 +95,7 @@ model ShiftAssignment {
 model Client {
   id                String      @id @default(cuid())
   name              String
-  dob               DateTime
+  dob               DateTime?
   clientId          String      @unique
   authorizationTier String
   createdAt         DateTime    @default(now())

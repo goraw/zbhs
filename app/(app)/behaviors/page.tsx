@@ -42,7 +42,7 @@ export default async function BehaviorsPage() {
           <Input id="severity" name="severity" type="number" min="1" max="5" defaultValue="1" required />
         </div>
         <div>
-          <Label htmlFor="clientRefId">Client scope</Label>
+          <Label htmlFor="clientRefId">Resident scope</Label>
           <Select id="clientRefId" name="clientRefId">
             <option value="">Global</option>
             {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}

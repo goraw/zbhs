@@ -408,7 +408,7 @@ export function CBHSEntryForm({
     <form onSubmit={handleSubmit(onSubmit)} className={`${inline ? "mt-0" : "mt-6"} grid gap-5 rounded-md border bg-white/95 p-5 shadow-lg shadow-primary/5`}>
       <div className="grid gap-4 md:grid-cols-3">
         <div>
-          <Label htmlFor="clientId">Client</Label>
+          <Label htmlFor="clientId">Resident</Label>
           {sourceEntry ? (
             <>
               <Input id="clientId" value={selectedClientName} readOnly />

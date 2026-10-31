@@ -9,9 +9,9 @@ type SidebarUser = { name?: string | null; role: "SUPER_ADMIN" | "STAFF" };
 export function AppSidebar({ user }: { user: SidebarUser }) {
   const links = [
     ["/dashboard", "Dashboard", LayoutDashboard],
-    ["/clients", "Clients", Users],
+    ["/clients", "Residents", Users],
     ["/behaviors", "Behaviors", BookOpen],
-    ["/logs", "Client Logs", ClipboardList],
+    ["/logs", "Resident Logs", ClipboardList],
     ["/weekly", "Weekly Summary", CalendarDays],
     ["/monthly", "Monthly Progress", ClipboardList],
     ["/schedule", user.role === "SUPER_ADMIN" ? "HR & Staffing" : "My Schedule", CalendarDays],

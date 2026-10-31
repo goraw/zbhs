@@ -112,9 +112,9 @@ export default async function WeeklyPage({
 
       <form action="/weekly" className="grid gap-4 rounded-md border bg-white/95 p-4 shadow-lg shadow-primary/5 md:grid-cols-[1.2fr_1fr_1fr_auto_auto] md:items-end">
         <div>
-          <Label htmlFor="clientId">Client</Label>
+          <Label htmlFor="clientId">Resident</Label>
           <Select id="clientId" name="clientId" defaultValue={selectedClientId}>
-            <option value="all">All clients</option>
+            <option value="all">All residents</option>
             {clients.map((client) => (
               <option key={client.id} value={client.id}>{client.name}</option>
             ))}
@@ -153,7 +153,7 @@ export default async function WeeklyPage({
                 </Link>
               </th>
               <th className="p-3">Printed / wet-signed</th>
-              <th className="p-3">Client</th>
+              <th className="p-3">Resident</th>
               <th className="p-3">Staff Initials</th>
               <th className="p-3">Report</th>
             </tr>

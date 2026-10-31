@@ -55,7 +55,7 @@ export function WeeklySummaryForm({ clients, simpleMode = false, defaultClientId
   return (
     <form action={saveWeeklySummary} className="grid gap-4 rounded-md border bg-white/95 p-5 shadow-lg shadow-primary/5 lg:grid-cols-2">
       <div>
-        <Label htmlFor="clientId">Client</Label>
+        <Label htmlFor="clientId">Resident</Label>
         <Select id="clientId" name="clientId" required value={clientId} onChange={(event) => setClientId(event.target.value)}>
           {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
         </Select>

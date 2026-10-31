@@ -9,9 +9,9 @@ export const userSchema = z.object({
 
 export const clientSchema = z.object({
   name: z.string().min(2).max(100),
-  dob: z.coerce.date(),
+  dob: z.preprocess((value) => value === "" || value == null ? null : value, z.coerce.date().nullable()),
   clientId: z.string().min(2).max(80),
-  authorizationTier: z.string().min(2).max(100)
+  authorizationTier: z.string().max(100).transform((value) => value.trim() || "Not provided")
 });
 
 export const behaviorSchema = z.object({

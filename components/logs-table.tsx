@@ -117,7 +117,7 @@ export function LogsTable({
                   <DateSortIcon className="h-4 w-4" />
                 </Link>
               </th>
-              <th className="p-3">Client</th>
+              <th className="p-3">Resident</th>
               <th className="p-3">Shift</th>
               <th className="p-3">Staff</th>
               <th className="p-3">Status</th>

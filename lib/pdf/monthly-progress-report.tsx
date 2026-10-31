@@ -2,7 +2,7 @@ import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { adlOptions, medicationLabels, monthLabel, monthlySections, notificationLabels, observationLabels, type MonthlyContent } from "@/lib/monthly-progress";
 
-export type MonthlyPdfReport = { clientName: string; clientId: string; dob: Date; month: string; authorName: string; status: "SAVED" | "DRAFT" | "COMPLETED"; completedAt: Date | null; version: number; content: MonthlyContent };
+export type MonthlyPdfReport = { clientName: string; clientId: string; dob: Date | null; month: string; authorName: string; status: "SAVED" | "DRAFT" | "COMPLETED"; completedAt: Date | null; version: number; content: MonthlyContent };
 // Avoid inherited numeric lineHeight: this renderer can multiply it during dynamic pagination.
 const styles = StyleSheet.create({
   page: { paddingTop: 124, paddingBottom: 44, paddingLeft: 54, paddingRight: 32, fontFamily: "Helvetica", fontSize: 9, color: "#173036" },
@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
   footer: { position: "absolute", top: 758, left: 54, width: 400, height: 20, fontSize: 7, color: "#52676e" },
   pageNumber: { position: "absolute", top: 758, left: 480, width: 100, fontSize: 7, color: "#52676e", textAlign: "right" }
 });
-function shortDate(date: Date) { return date.toLocaleDateString("en-US", { timeZone: "UTC", month: "2-digit", day: "2-digit", year: "numeric" }); }
+function shortDate(date: Date | null) { return date ? date.toLocaleDateString("en-US", { timeZone: "UTC", month: "2-digit", day: "2-digit", year: "numeric" }) : "Not available on file"; }
 function eventDate(value: string) { return value ? `${value.slice(5, 7)}/${value.slice(8, 10)}/${value.slice(0, 4)}` : "Not recorded"; }
 function Field({ label, value }: { label: string; value: string }) { return <Text style={styles.field}><Text style={styles.label}>{label}: </Text>{value || "Not documented"}</Text>; }
 

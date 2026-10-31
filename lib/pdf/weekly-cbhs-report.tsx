@@ -35,8 +35,8 @@ const styles = StyleSheet.create({
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-function shortDate(date: Date) {
-  return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+function shortDate(date: Date | null) {
+  return date ? date.toLocaleDateString("en-US", { timeZone: "UTC", month: "2-digit", day: "2-digit", year: "numeric" }) : "Not available on file";
 }
 
 function initials(name: string) {

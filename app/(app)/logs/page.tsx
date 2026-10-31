@@ -105,9 +105,9 @@ export default async function LogsPage({
 
       <form action="/logs" className="grid gap-4 rounded-md border bg-white/95 p-4 shadow-lg shadow-primary/5 md:grid-cols-[1.2fr_1fr_1fr_1fr_auto_auto] md:items-end">
         <div>
-          <Label htmlFor="clientId">Client</Label>
+          <Label htmlFor="clientId">Resident</Label>
           <Select id="clientId" name="clientId" defaultValue={selectedClientId}>
-            <option value="">All clients</option>
+            <option value="">All residents</option>
             {clients.map((client) => (
               <option key={client.id} value={client.id}>{client.name}</option>
             ))}
