@@ -107,6 +107,7 @@ model Client {
 }
 
 enum MonthlyProgressStatus {
+  SAVED
   DRAFT
   COMPLETED
 }
@@ -118,7 +119,7 @@ model MonthlyProgress {
   staffId     String
   authorName  String
   content     String
-  status      MonthlyProgressStatus @default(DRAFT)
+  status      MonthlyProgressStatus @default(SAVED)
   version     Int      @default(1)
   completedAt DateTime?
   createdAt   DateTime @default(now())

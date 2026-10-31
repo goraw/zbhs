@@ -1,45 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, Download, Eye, Loader2, Pencil, Plus, Save, Sparkles, Trash2, X } from "lucide-react";
-import { saveMonthlyProgress, reopenMonthlyProgress } from "@/lib/actions/monthly-progress";
-import { adlOptions, blankMonthlyContent, completionIssues, medicationLabels, monthlyContentSchema, monthlySections, notificationLabels, observationLabels, suggestedMonthlySummary, type MonthlyContent } from "@/lib/monthly-progress";
+import { Download, Eye, Loader2, Plus, Save, Sparkles, Trash2, X } from "lucide-react";
+import { saveMonthlyProgress } from "@/lib/actions/monthly-progress";
+import { adlOptions, blankMonthlyContent, medicationLabels, monthlyContentSchema, monthlySections, notificationLabels, observationLabels, suggestedMonthlySummary, type MonthlyContent } from "@/lib/monthly-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-type InitialReport = { id: string; version: number; status: "DRAFT" | "COMPLETED"; authorName: string; completedAt: string | null; content: MonthlyContent };
+type InitialReport = { id: string; version: number; status: "SAVED" | "DRAFT" | "COMPLETED"; authorName: string; completedAt: string | null; content: MonthlyContent };
 
 export function MonthlyProgressForm({ clientId, month, caregiver, report }: { clientId: string; month: string; caregiver: string; report: InitialReport | null }) {
   const router = useRouter();
   const form = useForm<MonthlyContent>({ resolver: zodResolver(monthlyContentSchema), defaultValues: report?.content ?? blankMonthlyContent() });
   const events = useFieldArray({ control: form.control, name: "events" });
   const [version, setVersion] = useState(report?.version ?? 0);
-  const [reportId, setReportId] = useState(report?.id);
-  const [completed, setCompleted] = useState(report?.status === "COMPLETED");
   const [pending, startTransition] = useTransition();
   const [notice, setNotice] = useState({ ok: true, message: "" });
-  const [issues, setIssues] = useState<string[]>([]);
   const [summaryDraft, setSummaryDraft] = useState<string | null>(null);
-  const [correcting, setCorrecting] = useState(false);
-  const reasonRef = useRef<HTMLTextAreaElement>(null);
   const pdfUrl = "/api/reports/monthly/" + clientId + "?month=" + month;
-  const save = (intent: "draft" | "complete") => form.handleSubmit((content) => {
-    const errors = intent === "complete" ? completionIssues(content, month) : [];
-    setIssues(errors);
-    if (errors.length) { setNotice({ ok: false, message: "Some sections need review before completing this report." }); return; }
+  const save = () => form.handleSubmit((content) => {
+    setNotice({ ok: true, message: "" });
     startTransition(async () => {
       try {
-        const result = await saveMonthlyProgress({ clientId, month, version, intent, content });
+        const result = await saveMonthlyProgress({ clientId, month, version, intent: "save", content });
         if (!result.ok) { setNotice({ ok: false, message: result.message }); return; }
-        setReportId(result.report.id); setVersion(result.report.version); setCompleted(result.report.status === "COMPLETED"); form.reset(content);
-        setNotice({ ok: true, message: intent === "complete" ? "Monthly report completed." : "Draft saved." });
+        setVersion(result.report.version); form.reset(content);
+        setNotice({ ok: true, message: "Report saved." });
         router.refresh();
       } catch { setNotice({ ok: false, message: "Unable to save. Your entries are still here; please try again." }); }
     });
@@ -47,13 +40,12 @@ export function MonthlyProgressForm({ clientId, month, caregiver, report }: { cl
 
   return <div className="space-y-5 pb-4">
     <div className="flex flex-wrap items-center justify-between gap-3 border-y py-3">
-      <p className="text-sm"><span className="font-semibold">Caregiver / provider:</span> {completed ? report?.authorName ?? caregiver : caregiver}</p>
-      <span className={(completed ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800") + " rounded px-2 py-1 text-xs font-semibold"}>{completed ? "Completed" : "Draft"}</span>
+      <p className="text-sm"><span className="font-semibold">Caregiver / provider:</span> {caregiver}</p>
+      <span className="text-xs font-semibold text-muted-foreground">{form.formState.isDirty ? "Unsaved changes" : version > 0 ? "Saved" : "Not saved"}</span>
     </div>
     {notice.message && <div role="status" className={(notice.ok ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-red-300 bg-red-50 text-red-900") + " flex items-start justify-between gap-3 rounded-md border p-3 text-sm"}>{notice.message}<button type="button" aria-label="Dismiss notification" onClick={() => setNotice({ ok: true, message: "" })}><X className="h-4 w-4" /></button></div>}
-    {!!issues.length && <ul role="alert" className="list-disc space-y-1 border-l-4 border-red-500 pl-7 text-sm text-red-800">{issues.map((issue) => <li key={issue}>{issue}</li>)}</ul>}
     <form onSubmit={(event) => event.preventDefault()}>
-      <fieldset disabled={pending || completed} className="space-y-6">
+      <fieldset disabled={pending} className="space-y-6">
         <div><Label htmlFor="monthly-home">Adult Family Home Name</Label><Input id="monthly-home" maxLength={150} {...form.register("homeName")} /></div>
         {monthlySections.map((section, index) => <section key={section.key} id={"monthly-" + section.key} className="space-y-4 border-b pb-6">
           <div className="flex flex-wrap items-end justify-between gap-3"><h2 className="text-lg font-semibold">{index + 1}. {section.title}</h2>
@@ -79,26 +71,24 @@ export function MonthlyProgressForm({ clientId, month, caregiver, report }: { cl
         </section>)}
         <section className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold">10. Overall Monthly Summary</h2><Button type="button" variant="secondary" onClick={() => {
           const draft = suggestedMonthlySummary(form.getValues());
-          if (!draft) { setNotice({ ok: false, message: "Enter observations before drafting a summary." }); return; }
-          if (draft.length > 64000) { setNotice({ ok: false, message: "The draft is too long. Please write a shorter monthly summary." }); return; }
+          if (!draft) { setNotice({ ok: false, message: "Enter observations before generating a summary." }); return; }
+          if (draft.length > 64000) { setNotice({ ok: false, message: "The summary is too long. Please write a shorter monthly summary." }); return; }
           setSummaryDraft(draft);
-        }}><Sparkles className="h-4 w-4" />Draft summary</Button></div>
-          {summaryDraft !== null && <div className="space-y-3 border-l-4 border-primary bg-muted p-4"><h3 className="font-semibold">Suggested summary</h3><p className="whitespace-pre-wrap text-sm">{summaryDraft}</p><div className="flex gap-2"><Button type="button" size="sm" onClick={() => { form.setValue("summary", summaryDraft, { shouldDirty: true }); setSummaryDraft(null); }}>Use draft</Button><Button type="button" size="sm" variant="secondary" onClick={() => setSummaryDraft(null)}>Cancel</Button></div></div>}
+        }}><Sparkles className="h-4 w-4" />Generate summary</Button></div>
+          {summaryDraft !== null && <div className="space-y-3 border-l-4 border-primary bg-muted p-4"><h3 className="font-semibold">Suggested summary</h3><p className="whitespace-pre-wrap text-sm">{summaryDraft}</p><div className="flex gap-2"><Button type="button" size="sm" onClick={() => { form.setValue("summary", summaryDraft, { shouldDirty: true }); setSummaryDraft(null); }}>Use summary</Button><Button type="button" size="sm" variant="secondary" onClick={() => setSummaryDraft(null)}>Cancel</Button></div></div>}
           <Label htmlFor="monthly-summary">Overall progress and well-being</Label><Textarea id="monthly-summary" rows={6} maxLength={64000} {...form.register("summary")} />
         </section>
       </fieldset>
       <div className="sticky bottom-0 mt-6 flex flex-wrap items-center gap-2 border-t bg-white/95 py-4 backdrop-blur">
-        {!completed && <><Button type="button" disabled={pending} onClick={() => void save("draft")}>{pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{pending ? "Saving..." : "Save Draft"}</Button><Button type="button" variant="secondary" disabled={pending} onClick={() => void save("complete")}><Check className="h-4 w-4" />Complete Report</Button></>}
-        {version > 0 && !form.formState.isDirty ? <Button asChild variant="secondary"><Link href={pdfUrl + "&preview=1"} target="_blank" rel="noopener noreferrer" prefetch={false}><Eye className="h-4 w-4" />Preview</Link></Button> : <Button type="button" variant="secondary" disabled title="Save the draft before previewing"><Eye className="h-4 w-4" />Preview</Button>}
-        {completed && <><Button asChild><Link href={pdfUrl} prefetch={false}><Download className="h-4 w-4" />Download PDF</Link></Button><Button type="button" variant="secondary" disabled={pending} onClick={() => setCorrecting(!correcting)}><Pencil className="h-4 w-4" />Make correction</Button></>}
+        <Button type="button" disabled={pending} onClick={() => void save()}>{pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{pending ? "Saving..." : "Save Report"}</Button>
+        {version > 0 && !form.formState.isDirty ? <>
+          <Button asChild variant="secondary"><Link href={pdfUrl + "&preview=1"} target="_blank" rel="noopener noreferrer" prefetch={false}><Eye className="h-4 w-4" />Preview</Link></Button>
+          <Button asChild variant="secondary"><Link href={pdfUrl} prefetch={false}><Download className="h-4 w-4" />Download PDF</Link></Button>
+        </> : <>
+          <Button type="button" variant="secondary" disabled title="Save the report before previewing"><Eye className="h-4 w-4" />Preview</Button>
+          <Button type="button" variant="secondary" disabled title="Save the report before downloading"><Download className="h-4 w-4" />Download PDF</Button>
+        </>}
       </div>
     </form>
-    {completed && correcting && <div className="space-y-3 border-l-4 border-amber-500 bg-amber-50 p-4"><Label htmlFor="monthly-correction">Reason for correction</Label><Textarea id="monthly-correction" ref={reasonRef} minLength={5} maxLength={1000} /><Button type="button" disabled={pending} onClick={() => startTransition(async () => {
-      try {
-        const result = await reopenMonthlyProgress({ id: reportId, version, reason: reasonRef.current?.value ?? "" });
-        if (!result.ok) { setNotice({ ok: false, message: result.message }); return; }
-        setVersion(result.report.version); setCompleted(false); setCorrecting(false); setIssues([]); setNotice({ ok: true, message: "Report reopened for correction. The completed version is preserved in history." }); router.refresh();
-      } catch { setNotice({ ok: false, message: "Unable to reopen the report. Please try again." }); }
-    })}>{pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}Reopen for correction</Button></div>}
   </div>;
 }

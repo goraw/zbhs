@@ -46,7 +46,7 @@ export const monthlyContentSchema = z.object({
   summary: z.string().trim().max(64000)
 }).strict();
 export type MonthlyContent = z.infer<typeof monthlyContentSchema>;
-export const monthlySaveSchema = z.object({ clientId: z.string().min(1), month: z.string().refine(validMonth, "Choose a valid month."), version: z.number().int().min(0), intent: z.enum(["draft", "complete"]), content: monthlyContentSchema }).strict();
+export const monthlySaveSchema = z.object({ clientId: z.string().min(1), month: z.string().refine(validMonth, "Choose a valid month."), version: z.number().int().min(0), intent: z.enum(["save", "draft", "complete"]).default("save"), content: monthlyContentSchema }).strict();
 
 export function blankMonthlyContent(): MonthlyContent {
   return { homeName: "Zagol Seniors Care LLC", sections: Object.fromEntries(monthlySections.map((section) => [section.key, { status: "", notes: Object.fromEntries(section.fields.map((field) => [field.key, ""])) }])) as MonthlyContent["sections"], adlAssistance: [], medicationAdministration: "", significantChanges: "", events: [], summary: "" };

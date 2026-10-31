@@ -5,7 +5,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { saveMonthlyProgressRecord, reopenMonthlyProgressRecord } from "@/lib/monthly-progress-service";
+import { saveMonthlyProgressRecord } from "@/lib/monthly-progress-service";
 
 async function activeActor() {
   const session = await requireUser();
@@ -22,14 +22,6 @@ export async function saveMonthlyProgress(input: unknown) {
   const actor = await activeActor();
   try {
     const report = await prisma.$transaction((tx) => saveMonthlyProgressRecord(tx, actor, input));
-    revalidatePath("/monthly", "layout");
-    return { ok: true as const, report };
-  } catch (error) { return { ok: false as const, message: message(error) }; }
-}
-export async function reopenMonthlyProgress(input: unknown) {
-  const actor = await activeActor();
-  try {
-    const report = await prisma.$transaction((tx) => reopenMonthlyProgressRecord(tx, actor, input));
     revalidatePath("/monthly", "layout");
     return { ok: true as const, report };
   } catch (error) { return { ok: false as const, message: message(error) }; }

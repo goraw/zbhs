@@ -22,7 +22,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const snapshot = revision ? await prisma.monthlyProgressRevision.findUnique({ where: { reportId_version: { reportId: report.id, version: revision } } }) : report;
   if (!snapshot) return new NextResponse("Revision not found", { status: 404 });
   const preview = request.nextUrl.searchParams.get("preview") === "1";
-  if (!preview && snapshot.status !== "COMPLETED") return new NextResponse("Complete the report before downloading a final PDF", { status: 409 });
   const blob = await pdf(<MonthlyProgressPdf reports={[{ clientName: report.client.name, clientId: report.client.clientId, dob: report.client.dob, month, authorName: snapshot.authorName, status: snapshot.status, completedAt: snapshot.completedAt, version: snapshot.version, content: monthlyContentSchema.parse(JSON.parse(snapshot.content)) }]} />).toBlob();
   await audit(preview ? "PREVIEW_MONTHLY_PROGRESS_PDF" : "EXPORT_MONTHLY_PROGRESS_PDF", { userId: user.id, request, details: `Monthly progress ${report.id}, version ${snapshot.version}.` });
   return new NextResponse(await blob.arrayBuffer(), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `${preview ? "inline" : "attachment"}; filename="monthly-progress-${month}-v${snapshot.version}.pdf"`, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });

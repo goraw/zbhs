@@ -2,7 +2,7 @@ import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { adlOptions, medicationLabels, monthLabel, monthlySections, notificationLabels, observationLabels, type MonthlyContent } from "@/lib/monthly-progress";
 
-export type MonthlyPdfReport = { clientName: string; clientId: string; dob: Date; month: string; authorName: string; status: "DRAFT" | "COMPLETED"; completedAt: Date | null; version: number; content: MonthlyContent };
+export type MonthlyPdfReport = { clientName: string; clientId: string; dob: Date; month: string; authorName: string; status: "SAVED" | "DRAFT" | "COMPLETED"; completedAt: Date | null; version: number; content: MonthlyContent };
 // Avoid inherited numeric lineHeight: this renderer can multiply it during dynamic pagination.
 const styles = StyleSheet.create({
   page: { paddingTop: 124, paddingBottom: 44, paddingLeft: 54, paddingRight: 32, fontFamily: "Helvetica", fontSize: 9, color: "#173036" },
@@ -22,8 +22,7 @@ const styles = StyleSheet.create({
   line: { borderBottom: "1px solid #173036", height: 20 },
   footerLine: { position: "absolute", top: 752, left: 54, right: 32, height: 1, borderTop: "1px solid #d5e0e2" },
   footer: { position: "absolute", top: 758, left: 54, width: 400, height: 20, fontSize: 7, color: "#52676e" },
-  pageNumber: { position: "absolute", top: 758, left: 480, width: 100, fontSize: 7, color: "#52676e", textAlign: "right" },
-  draft: { position: "absolute", top: 94, left: 54, right: 32, fontSize: 8, color: "#9c4c12", fontWeight: 700 }
+  pageNumber: { position: "absolute", top: 758, left: 480, width: 100, fontSize: 7, color: "#52676e", textAlign: "right" }
 });
 function shortDate(date: Date) { return date.toLocaleDateString("en-US", { timeZone: "UTC", month: "2-digit", day: "2-digit", year: "numeric" }); }
 function eventDate(value: string) { return value ? `${value.slice(5, 7)}/${value.slice(8, 10)}/${value.slice(0, 4)}` : "Not recorded"; }
@@ -36,7 +35,6 @@ export function MonthlyProgressPdf({ reports }: { reports: MonthlyPdfReport[] })
       <Text fixed style={styles.title}>MONTHLY RESIDENT PROGRESS REPORT</Text>
       <Text fixed style={styles.facility}>{report.content.homeName}</Text>
       <Text fixed style={styles.resident}><Text style={styles.label}>Resident: </Text>{report.clientName} | <Text style={styles.label}>Month: </Text>{monthLabel(report.month)}</Text>
-      {report.status === "DRAFT" && <Text fixed style={styles.draft}>DRAFT - INCOMPLETE / NOT FINAL</Text>}
       <View style={styles.section}>
         <Text style={styles.meta}>DOB: {shortDate(report.dob)}</Text>
         <Text style={styles.meta}>Caregiver / provider: {report.authorName}</Text>
@@ -67,7 +65,7 @@ export function MonthlyProgressPdf({ reports }: { reports: MonthlyPdfReport[] })
         <View style={styles.signatureRow}><View style={{ width: "70%" }}><Text>Careprovider initial</Text><View style={styles.line} /></View><View style={{ width: "26%" }}><Text>Date</Text><View style={styles.line} /></View></View>
       </View>
       <View fixed style={styles.footerLine} />
-      <Text fixed style={styles.footer}>{report.clientName} | {monthLabel(report.month)} | {report.status === "DRAFT" ? "Draft" : "Completed"}</Text>
+      <Text fixed style={styles.footer}>{report.clientName} | {monthLabel(report.month)}</Text>
       <Text fixed style={styles.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
     </Page>)}
   </Document>;
