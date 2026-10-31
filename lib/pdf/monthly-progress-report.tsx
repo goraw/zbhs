@@ -38,7 +38,7 @@ export function MonthlyProgressPdf({ reports }: { reports: MonthlyPdfReport[] })
       <Text fixed style={styles.resident}><Text style={styles.label}>Resident: </Text>{report.clientName} | <Text style={styles.label}>Month: </Text>{monthLabel(report.month)}</Text>
       {report.status === "DRAFT" && <Text fixed style={styles.draft}>DRAFT - INCOMPLETE / NOT FINAL</Text>}
       <View style={styles.section}>
-        <Text style={styles.meta}>DOB: {shortDate(report.dob)} | Resident ID: {report.clientId}</Text>
+        <Text style={styles.meta}>DOB: {shortDate(report.dob)}</Text>
         <Text style={styles.meta}>Caregiver / provider: {report.authorName}</Text>
       </View>
       {monthlySections.map((section, index) => {
@@ -64,8 +64,7 @@ export function MonthlyProgressPdf({ reports }: { reports: MonthlyPdfReport[] })
       })}
       <View style={styles.section}><Text style={styles.sectionTitle} minPresenceAhead={30}>10. Overall Monthly Summary</Text><Text>{report.content.summary || "Not documented"}</Text></View>
       <View wrap={false} style={styles.signature}>
-        <Text>Prepared by: {report.authorName}{report.completedAt ? " | Completed: " + report.completedAt.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles" }) : ""} | Version {report.version}</Text>
-        <View style={styles.signatureRow}><View style={{ width: "70%" }}><Text>Caregiver / provider wet signature</Text><View style={styles.line} /></View><View style={{ width: "26%" }}><Text>Date</Text><View style={styles.line} /></View></View>
+        <View style={styles.signatureRow}><View style={{ width: "70%" }}><Text>Careprovider initial</Text><View style={styles.line} /></View><View style={{ width: "26%" }}><Text>Date</Text><View style={styles.line} /></View></View>
       </View>
       <View fixed style={styles.footerLine} />
       <Text fixed style={styles.footer}>{report.clientName} | {monthLabel(report.month)} | {report.status === "DRAFT" ? "Draft" : "Completed"}</Text>
