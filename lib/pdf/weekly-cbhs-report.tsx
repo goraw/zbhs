@@ -89,7 +89,7 @@ export function WeeklyCBHSReport({
           <View style={styles.row}>
             <Text style={[styles.cell, { width: "30%" }]}><Text style={styles.label}>Resident: </Text>{summary.client.name}</Text>
             <Text style={[styles.cell, { width: "22%" }]}><Text style={styles.label}>DOB: </Text>{shortDate(summary.client.dob)}</Text>
-            <Text style={[styles.cell, { width: "24%" }]}><Text style={styles.label}>Client ID: </Text>{summary.client.clientId}</Text>
+            <Text style={[styles.cell, { width: "24%" }]}><Text style={styles.label}>Resident ID: </Text>{summary.client.clientId}</Text>
             <Text style={[styles.cell, { width: "24%", borderRightWidth: 0 }]}><Text style={styles.label}>Tier: </Text>{summary.client.authorizationTier}</Text>
           </View>
           <View style={styles.row}>

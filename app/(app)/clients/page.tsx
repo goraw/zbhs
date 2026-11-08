@@ -28,8 +28,8 @@ export default async function ClientsPage() {
           <Input id="dob" name="dob" type="date" />
         </div>
         <div>
-          <Label htmlFor="clientId">Medicaid / Resident ID</Label>
-          <Input id="clientId" name="clientId" required />
+          <Label htmlFor="medicaidId">Medicaid ID (optional)</Label>
+          <Input id="medicaidId" name="medicaidId" />
         </div>
         <div>
           <Label htmlFor="authorizationTier">Authorization tier</Label>
@@ -39,16 +39,17 @@ export default async function ClientsPage() {
           <Button type="submit">Add resident</Button>
         </div>
       </form>
-      <div className="overflow-hidden rounded-md border bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-md border bg-white shadow-sm">
         <table className="w-full text-left text-sm">
           <thead className="bg-muted">
-            <tr><th className="p-3">Name</th><th className="p-3">Medicaid / Resident ID</th><th className="p-3">Tier</th><th className="p-3">DOB</th></tr>
+            <tr><th className="p-3">Name</th><th className="p-3">Resident ID</th><th className="p-3">Medicaid ID</th><th className="p-3">Tier</th><th className="p-3">DOB</th></tr>
           </thead>
           <tbody>
             {clients.map((client) => (
               <tr className="border-t" key={client.id}>
                 <td className="p-3 font-medium">{client.name}</td>
                 <td className="p-3">{client.clientId}</td>
+                <td className="p-3">{client.medicaidId ?? "Not provided"}</td>
                 <td className="p-3">{client.authorizationTier}</td>
                 <td className="p-3">{formatAmericanDate(client.dob)}</td>
               </tr>
