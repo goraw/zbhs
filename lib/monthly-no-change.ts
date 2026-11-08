@@ -1,7 +1,7 @@
 import { monthlySections, type MonthlyContent } from "@/lib/monthly-progress";
 
 export function noChangeMonthlyContent(content: MonthlyContent): MonthlyContent {
-  // A caregiver must confirm this option; never overwrite existing narrative or incidents.
+  // Use only for confirmed observations; never overwrite existing narrative or incidents.
   if (content.events.length || content.summary.trim() || content.significantChanges === "YES" || content.medicationAdministration === "NO" || monthlySections.some((section) => content.sections[section.key].status === "CHANGES" || Object.values(content.sections[section.key].notes).some((note) => note.trim()))) {
     throw new Error("Existing observations or incidents are present. Review and update the report manually.");
   }
