@@ -18,11 +18,10 @@ export default async function ResidentMonthlyPage({ params, searchParams }: { pa
     prisma.monthlyProgress.findUnique({ where: { clientId_month: { clientId, month } } })
   ]);
   if (!client) notFound();
-  const end = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0)).toISOString().slice(0, 10);
   return <section className="space-y-5">
     <Link href={"/monthly?month=" + month} className="inline-flex items-center gap-1 text-sm font-medium text-primary"><ArrowLeft className="h-4 w-4" />Monthly overview</Link>
     <div><h1 className="text-2xl font-semibold">Monthly Resident Progress Report</h1><p className="mt-1 text-base font-medium">{client.name} <span className="font-normal text-muted-foreground">| {monthLabel(month)}</span></p></div>
-    <Link href={"/daily-notes?" + new URLSearchParams({ resident: clientId, from: month + "-01", to: end })} className="inline-flex text-sm font-medium text-primary underline">Review this month's daily care notes</Link>
+    <Link href={"/daily-notes?" + new URLSearchParams({ resident: clientId, month })} className="inline-flex text-sm font-medium text-primary underline">Review this month's daily care notes</Link>
     <MonthlyProgressForm key={clientId + month} clientId={clientId} month={month} caregiver={user.name ?? ""} report={report ? { id: report.id, version: report.version, status: report.status, authorName: report.authorName, completedAt: report.completedAt?.toISOString() ?? null, content: monthlyContentSchema.parse(JSON.parse(report.content)) } : null} />
   </section>;
 }

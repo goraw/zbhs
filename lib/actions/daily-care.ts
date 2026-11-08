@@ -16,7 +16,7 @@ export async function saveDailyCare(input: unknown) {
   const actor = await activeActor();
   try {
     await prisma.$transaction((tx) => saveDailyCareRecord(tx, actor, input));
-    revalidatePath("/daily-notes");
+    revalidatePath("/daily-notes", "layout");
     return { ok: true, message: "Daily note saved." };
   } catch (error) {
     return { ok: false, message: error instanceof z.ZodError ? "Check the resident, date, and note." : error instanceof DailyCareError ? error.message : "Unable to save this note." };
@@ -27,7 +27,7 @@ export async function deleteDailyCare(input: unknown) {
   const data = z.object({ id: z.string().min(1), version: z.number().int().min(1) }).parse(input);
   try {
     await prisma.$transaction((tx) => deleteDailyCareRecord(tx, actor, data.id, data.version));
-    revalidatePath("/daily-notes");
+    revalidatePath("/daily-notes", "layout");
     return { ok: true, message: "Daily note deleted." };
   } catch { return { ok: false, message: "Unable to delete this note. It may have changed, or you may not have access." }; }
 }
