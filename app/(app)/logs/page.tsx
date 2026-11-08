@@ -97,7 +97,7 @@ export default async function LogsPage({
     <section className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">CBHS Logs</h1>
+          <h1 className="text-2xl font-semibold">CBHS Behavior Logs</h1>
           <p className="text-sm text-muted-foreground">Daily entries feed the weekly CBHS report; PDFs are generated from signed weekly summaries.</p>
         </div>
         <NavActionButton href="/logs/new" label="New log" pendingLabel="Opening log..." />

@@ -52,6 +52,7 @@ model User {
   shiftRevocations   ShiftRevocation[]
   monthlyReports     MonthlyProgress[]
   monthlyRevisions   MonthlyProgressRevision[]
+  dailyCareNotes     DailyCareNote[]
 }
 
 model WorkShift {
@@ -105,6 +106,23 @@ model Client {
   entries           CBHSEntry[]
   weeklySummaries   WeeklySummary[]
   monthlyReports    MonthlyProgress[]
+  dailyCareNotes    DailyCareNote[]
+}
+
+model DailyCareNote {
+  id        String   @id @default(cuid())
+  clientId  String
+  staffId   String
+  date      String
+  note      String
+  version   Int      @default(1)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  staff     User     @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  @@index([clientId, date])
+  @@index([deletedAt, date])
 }
 
 enum MonthlyProgressStatus {

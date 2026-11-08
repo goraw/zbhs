@@ -7,6 +7,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Download, Eye, Loader2, Plus, Save, Sparkles, Trash2, X } from "lucide-react";
 import { saveMonthlyProgress } from "@/lib/actions/monthly-progress";
+import { noChangeMonthlyContent } from "@/lib/monthly-no-change";
 import { adlOptions, blankMonthlyContent, medicationLabels, monthlyContentSchema, monthlySections, notificationLabels, observationLabels, suggestedMonthlySummary, type MonthlyContent } from "@/lib/monthly-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ export function MonthlyProgressForm({ clientId, month, caregiver, report }: { cl
   const [pending, startTransition] = useTransition();
   const [notice, setNotice] = useState({ ok: true, message: "" });
   const [summaryDraft, setSummaryDraft] = useState<string | null>(null);
+  const [noChangeConfirmed, setNoChangeConfirmed] = useState(false);
   const pdfUrl = "/api/reports/monthly/" + clientId + "?month=" + month;
   const save = () => form.handleSubmit((content) => {
     setNotice({ ok: true, message: "" });
@@ -46,6 +48,16 @@ export function MonthlyProgressForm({ clientId, month, caregiver, report }: { cl
     {notice.message && <div role="status" className={(notice.ok ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-red-300 bg-red-50 text-red-900") + " flex items-start justify-between gap-3 rounded-md border p-3 text-sm"}>{notice.message}<button type="button" aria-label="Dismiss notification" onClick={() => setNotice({ ok: true, message: "" })}><X className="h-4 w-4" /></button></div>}
     <form onSubmit={(event) => event.preventDefault()}>
       <fieldset disabled={pending} className="space-y-6">
+        <div className="flex flex-wrap items-center gap-3 border-b pb-4"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={noChangeConfirmed} onChange={(event) => setNoChangeConfirmed(event.target.checked)} className="h-4 w-4 accent-[hsl(var(--primary))]" />I observed no significant change this month</label><Button type="button" variant="secondary" disabled={!noChangeConfirmed} onClick={() => {
+          try {
+            const content = noChangeMonthlyContent(form.getValues());
+            form.setValue("sections", content.sections, { shouldDirty: true });
+            form.setValue("significantChanges", content.significantChanges, { shouldDirty: true });
+            form.setValue("summary", content.summary, { shouldDirty: true });
+            setNoChangeConfirmed(false);
+            setNotice({ ok: true, message: "No-change wording added. Review and save the report." });
+          } catch (error) { setNotice({ ok: false, message: error instanceof Error ? error.message : "Review existing observations first." }); }
+        }}>Apply no-change wording</Button></div>
         <div><Label htmlFor="monthly-home">Adult Family Home Name</Label><Input id="monthly-home" maxLength={150} {...form.register("homeName")} /></div>
         {monthlySections.map((section, index) => <section key={section.key} id={"monthly-" + section.key} className="space-y-4 border-b pb-6">
           <div className="flex flex-wrap items-end justify-between gap-3"><h2 className="text-lg font-semibold">{index + 1}. {section.title}</h2>
